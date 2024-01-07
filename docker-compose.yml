@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  db:
+    image: mongo:4.2.0-bionic
+    container_name: db_mockingbird
+    ports:
+      - 27017:27017
+    volumes:
+      - db:/data/db
+
+  # mockingbird:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   hostname: mockingbird
+  #   container_name: mockingbird
+  #   image: mockingbird:latest
+  #   restart: always
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - ./app
+
+
+volumes:
+  db:
