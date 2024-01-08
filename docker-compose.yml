@@ -1,27 +1,27 @@
 version: '3.8'
 
 services:
-  db:
+  mocker_db:
     image: mongo:4.2.0-bionic
-    container_name: db_mockingbird
+    container_name: mocker_db
     ports:
-      - 27017:27017
+      - 27018:27017
     volumes:
-      - db:/data/db
+      - mocker_db:/data/db
 
-  # mockingbird:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   hostname: mockingbird
-  #   container_name: mockingbird
-  #   image: mockingbird:latest
-  #   restart: always
-  #   ports:
-  #     - "3000:3000"
-  #   volumes:
-  #     - ./app
+  mocker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    hostname: mocker
+    container_name: mocker
+    image: mocker:latest
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
 
 
 volumes:
-  db:
+  mocker_db:

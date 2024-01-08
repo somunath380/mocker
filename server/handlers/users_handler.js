@@ -5,36 +5,46 @@ const jwt = require("jsonwebtoken")
 const maxExpiry = 3 * 60 * 60
 const jwtSecret = process.env.SECRET
 
-exports.createuser = async (req, res, next) => {
+exports.createUser = async (req, res, next) => {
     // body = {'username': 'str', 'email': 'str', 'password': 'str'}
     try {
         const body = req.body;
         const password = body.password
         const hashedPassword = await encryptPassword(password)
         body.password = hashedPassword
-        const newUser = new UserModel(body);
-        await newUser.validate();
-        const saveUser = await newUser.save();
-        
-        // create jwt token
-        const token = jwt.sign(
-            {
-                id: newUser._id,
-                username: newUser.username,
-                role: newUser.role
-            },
-            jwtSecret,
-            {
-                expiresIn: maxExpiry
-            }
-        )
-        // set jwt token in cookie
-        res.cookie("jwt", token, {
-            httpOnly: true,
-            maxAge: maxExpiry * 1000
-        })
 
-        res.status(200).json({success: true, user: saveUser});
+        // check if the user already exists or not
+        const user = await UserModel.findOne({"username": body.username})
+        if (user){
+            res.status(401).json({
+                success: false,
+                error: "user already exists"
+            })
+        } else {
+            // else create the user
+            const newUser = new UserModel(body);
+            await newUser.validate();
+            const saveUser = await newUser.save();
+            
+            // create jwt token
+            const token = jwt.sign(
+                {
+                    id: newUser._id,
+                    username: newUser.username,
+                    role: newUser.role
+                },
+                jwtSecret,
+                {
+                    expiresIn: maxExpiry
+                }
+            )
+            // set jwt token in cookie
+            res.cookie("jwt", token, {
+                httpOnly: true,
+                maxAge: maxExpiry * 1000
+            })
+            res.status(200).json({success: true, user: saveUser});
+        }
     } catch (error) {
         res.status(400).json({error: error.message});
         process.exit(1)

@@ -2,7 +2,7 @@ const config = require("../config")
 // const env = process.env.ENV || "development"
 const crypto = require("crypto")
 
-const port = config.server.port
+const port = config?.server?.port || 3000
 function initServer() {
     const secret = crypto.randomBytes(35).toString("hex")
     process.env.SECRET = secret
@@ -12,7 +12,7 @@ function initServer() {
     })
     process.on("unhandledRejection", err => {
         console.log(`An error occurred: ${err.message}`)
-        server.close(() => process.exit(1))
+        process.exit(1)
     })
 }
 
