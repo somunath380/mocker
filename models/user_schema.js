@@ -25,6 +25,10 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: "basic",
         required: false
+    },
+    logIn: {
+        type: Boolean,
+        default: false
     }
 })
 
