@@ -3,11 +3,10 @@ const _ = require("lodash")
 const config = require("../../config")
 const {UrlModel} = require("../../models/url_schema")
 const path = require('path');
+const fs = require("fs")
 
 const availableExtensions = [".py", ".js"]
 
-const maxExpiryInSec = 24 * 60
-const jwtSecret = config.secret
 
 exports.createUrl = async (req, res, next) => {
     try {
@@ -223,5 +222,18 @@ exports.uploadFile = async (req, res, next) => {
             success: false,
             error: err.message
         })
+    }
+}
+
+
+exports.deleteStorage = async (req, res, next) => {
+    try {
+        const uploadPath = process.env.ABSOLUTEUPLOADPATH
+        const currPath = __dirname
+        const filePath = path.join(currPath, "..", "..", uploadPath)
+        fs.rmSync(filePath, { recursive: true })
+        return res.status(200).json({success: true, message: 'files deleted'});
+    } catch (error) {
+        return res.status(401).json({success: false, message: 'Error deleting storage', error: err.message});
     }
 }

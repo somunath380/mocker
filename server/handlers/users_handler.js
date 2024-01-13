@@ -49,6 +49,7 @@ exports.createUser = async (req, res, next) => {
                 }
             )
             const user = {
+                id: newUser._id,
                 username: newUser.username,
                 accesstoken: accessToken
             }

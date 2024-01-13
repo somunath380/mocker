@@ -20,4 +20,3 @@ function checkOrCreateFolder() {
     }
     process.env.ABSOLUTEUPLOADPATH = uploadPath
 }
-

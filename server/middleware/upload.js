@@ -1,7 +1,18 @@
 require('dotenv').config();
 const path = require("path")
+const fs = require("fs")
 const multer = require('multer');
-const uploadPath = process.env.ABSOLUTEUPLOADPATH
+const absolutePath = process.env.ABSOLUTEUPLOADPATH
+
+
+function checkOrCreateFolder() {
+    if (!fs.existsSync(absolutePath)) {
+        fs.mkdirSync(absolutePath)
+        console.log(`Folder created at ${absolutePath}`);
+    } else {
+        console.log(`Folder already exists at ${absolutePath}`);
+    }
+}
 
 // setup storage path for uploaded files
 const storage = multer.diskStorage({
@@ -15,5 +26,6 @@ const storage = multer.diskStorage({
     }
 })
 
+checkOrCreateFolder()
 exports.upload = multer({storage: storage})
 

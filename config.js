@@ -8,8 +8,8 @@ const config = {
         db_url: process.env.DB_URL || 'mongodb://localhost:27017/mockingbird'
       },
       secret: process.env.SECRET,
-      superuser: process.env.SUPERUSER,
-      superpwd: process.env.SUPERPWD,
+      superuser: process.env.SUPERUSER || 'somu',
+      superpwd: process.env.SUPERPWD || 'nath',
       uploadPath: process.env.UPLOADPATH,
       maxRefreshTokenTTL: 60 * 60 * 24 * 7,
       maxAccessTokenTTL: 60 * 15
