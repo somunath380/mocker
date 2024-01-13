@@ -5,7 +5,9 @@ services:
     image: mongo:4.2.0-bionic
     container_name: mocker_db
     ports:
-      - 27018:27017
+      - ${DATABASE_PORT}:${DATABASE_PORT}
+    environment:
+      - DATABASE_PORT=${DATABASE_PORT}
     volumes:
       - mocker_db:/data/db
 
@@ -18,7 +20,9 @@ services:
     image: mocker:latest
     restart: always
     ports:
-      - "3000:3000"
+      - "SERVER_PORT:SERVER_PORT"
+    environment:
+      - SERVER_PORT=${SERVER_PORT}
     volumes:
       - .:/app
 

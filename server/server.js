@@ -1,16 +1,12 @@
 const express = require("express")
 const cookieParser = require("cookie-parser")
-const usersHandler = require("./routes/users")
-const urlsHandler = require("./routes/urls")
+const apiHandler = require("./routes/index")
+
 const app = express()
 app.use(express.json())
 app.use(cookieParser())
+app.use("/api/v1", apiHandler)
 
-try {
-    app.use("/users", usersHandler)
-    app.use("/urls", urlsHandler)
-} catch (error) {
-    console.log(`error occured: ${error}`);
-}
+
 
 module.exports = app

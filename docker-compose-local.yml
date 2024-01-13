@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  mocker_db:
+    image: mongo:4.2.0-bionic
+    container_name: mocker_db
+    ports:
+      - ${DATABASE_PORT}:${DATABASE_PORT}
+    environment:
+      - DATABASE_PORT=${DATABASE_PORT}
+    volumes:
+      - mocker_db:/data/db
+
+volumes:
+  mocker_db:

@@ -1,4 +1,4 @@
-const { ObjectId, Int32 } = require("mongodb")
+const { ObjectId } = require("mongodb")
 const mongoose = require("mongoose")
 
 const UrlSchema = new mongoose.Schema({
@@ -13,12 +13,18 @@ const UrlSchema = new mongoose.Schema({
         unique: true,
         index: true
     },
-    identifier: {
-        type: String,
-        index: true,
-        unique: true,
-        required: true
-    },
+    // identifier: {
+    //     type: String,
+    //     index: true,
+    //     unique: true,
+    //     required: true,
+    //     validate: {
+    //         validator: function(value) {
+    //             return typeof value === 'string';
+    //         }, // Use a custom validation function
+    //         message: 'Identifier should be a string' // Error message if validation fails
+    //     }
+    // },
     filepath: {
         type: String,
         required: false,
@@ -28,30 +34,64 @@ const UrlSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true,
-        index: true
+        index: true,
+        validate: {
+            validator: function(value) {
+                return typeof value === 'string';
+            }, // Use a custom validation function
+            message: 'Identifier should be a string' // Error message if validation fails
+        }
     },
     method: {
         type: String,
-        required: true
+        required: true,
+        validate: {
+            validator: function(value) {
+                return typeof value === 'string';
+            }, // Use a custom validation function
+            message: 'Identifier should be a string' // Error message if validation fails
+        }
     },
     body: {
         type: mongoose.Schema.Types.Mixed,
-        required: false,
-        default: {}
+        required: true,
+        default: {},
+        validate: {
+            validator: function(value) {
+                return typeof value === 'object' && !Array.isArray(value);
+            }, // Use a custom validation function
+            message: 'body must be a non-array object' // Error message if validation fails
+        }
     },
     response: {
         type: mongoose.Schema.Types.Mixed,
         required: true,
-        default: {}
+        default: {},
+        validate: {
+            validator: function(value) {
+                return typeof value === 'object' && !Array.isArray(value);
+            }, // Use a custom validation function
+            message: 'response must be a non-array object' // Error message if validation fails
+        }
     },
     headers: {
         type: mongoose.Schema.Types.Mixed,
-        required: false,
-        default: {}
+        required: true,
+        default: {},
+        validate: {
+            validator: function(value) {
+                return typeof value === 'object' && !Array.isArray(value);
+            }, // Use a custom validation function
+            message: 'headers must be a non-array object' // Error message if validation fails
+        }
     },
     status_code: {
         type: Number,
-        required: true
+        required: true,
+        validate: {
+            validator: Number.isInteger,
+            message: 'Status code should be an Int'
+        }
     },
     execute_file: {
         type: Boolean,

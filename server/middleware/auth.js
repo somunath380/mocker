@@ -5,46 +5,43 @@ const basicAuth = require('basic-auth');
 const jwtSecret = config.secret
 
 exports.adminAuth = (req, res, next) => {
-    const token = req.cookies.jwt
+    const token = req.headers['Authorization']
     if (token) {
         jwt.verify(token, jwtSecret, (err, decodedToken) => {
             if (err) {
-                res.status(401).json({success: false, message: "Not Authorized"})
+                return res.status(401).json({success: false, message: err.message})
             } else {
                 if (decodedToken.role == "admin") {
                     next()
                 } else {
-                    res.status(401).json({success: false, message: "Not Authorized"})
+                    return res.status(401).json({success: false, message: "Not Authorized"})
                 }
             }
         })
     } else {
-        res.status(401).json({success: false, message: "Not Authorized"})
+        return res.status(401).json({success: false, message: "Access token is required"})
     }
 }
 
 exports.userAuth = (req, res, next) => {
-    const token = req.cookies.jwt
+    const token = req.headers['Authorization']
     if (token) {
         jwt.verify(token, jwtSecret, (err, decodedToken) => {
             if (err) {
-                res.status(401).json({success: false, message: "Not Authorized"})
+                return res.status(401).json({success: false, message: err.message})
             } else {
-                if (decodedToken?.reLogin) {
-                    res.status(200).json({success: true, message: "Please re-login"})
+                if (decodedToken.role == "basic" || decodedToken.role == "admin") {
+                    next()
                 } else {
-                    if (decodedToken.role == "basic") {
-                        next()
-                    } else {
-                        res.status(401).json({success: false, message: "Not Authorized"})
-                    }
+                    return res.status(401).json({success: false, message: "Not Authorized"})
                 }
             }
         })
     } else {
-        res.status(401).json({success: false, message: "Not Authorized"})
+        return res.status(401).json({success: false, message: "Access token is required"})
     }
 }
+
 
 exports.basicAuth = (req, res, next) => {
     const user = basicAuth(req);
@@ -57,5 +54,26 @@ exports.basicAuth = (req, res, next) => {
     } else {
         res.set('WWW-Authenticate', 'Basic realm=Authorization Required');
         return res.status(401).send('Unauthorized');
+    }
+}
+
+exports.loginAuth = (req, res, next) => {
+    // check if the access token is expired in the header or not
+    const accessToken = req.headers['Authorization']
+    if (accessToken) {
+        jwt.verify(accessToken, jwtSecret, (err, decodedToken) => {
+            if (err) {
+                return res.status(401).json({success: false, message: err.message})
+            } else {
+                if (decodedToken.role == "basic" || decodedToken.role == "admin") {
+                    req.body.userid = decodedToken.id
+                    next()
+                } else {
+                    return res.status(401).json({success: false, message: "Not Authorized"})
+                }
+            }
+        })
+    } else {
+        return res.status(401).json({success: false, message: "Access token is required"})
     }
 }

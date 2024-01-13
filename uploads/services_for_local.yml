@@ -1,0 +1,107 @@
+version: "3.4"
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    hostname: zookeeper
+    platform: linux/amd64
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
+    networks:
+      - fyndnet
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.2
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    networks:
+      - fyndnet
+
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    container_name: kafdrop
+    hostname: kafdrop
+    platform: linux/amd64
+    environment:
+      - "KAFKA_BROKERCONNECT=kafka:29092"
+      - "JVM_OPTS=-Xms32M -Xmx64M"
+      - "SERVER_SERVLET_CONTEXTPATH=/"
+    depends_on:
+      - kafka
+    ports:
+      - "9000:9000"
+    networks:
+      - fyndnet
+
+  postgresql:
+    image: postgres:13.2
+    container_name: postgresql
+    hostname: postgresql
+    platform: linux/amd64
+    environment:
+        POSTGRES_DB: hogwarts
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+    ports:
+        - "5432:5432"
+    networks:
+        - fyndnet
+    volumes:
+        - hog_volume:/var/lib/postgresql/data
+
+  redis:
+    image: redis:5.0.5-alpine
+    container_name: redis
+    hostname: redis
+    platform: linux/amd64
+    ports:
+      - "6379:6379"
+    networks:
+      - fyndnet
+    volumes:
+      - "hog_volume:/data"
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    hostname: jaeger
+    platform: linux/amd64
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"
+      - "14268:14268"
+      - "9411:9411"
+    networks:
+      - fyndnet
+
+  mongodb:
+    container_name: mongo
+    image: mongo:4.2.0-bionic
+    ports:
+      - '27017:27017'
+    volumes:
+      - "hog_volume:/data/db"
+
+volumes:
+  hog_volume:
+
+networks:
+  fyndnet:
+    external:
+      name: fyndnet

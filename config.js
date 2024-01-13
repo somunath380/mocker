@@ -9,7 +9,10 @@ const config = {
       },
       secret: process.env.SECRET,
       superuser: process.env.SUPERUSER,
-      superpwd: process.env.SUPERPWD
+      superpwd: process.env.SUPERPWD,
+      uploadPath: process.env.UPLOADPATH,
+      maxRefreshTokenTTL: 60 * 60 * 24 * 7,
+      maxAccessTokenTTL: 60 * 15
     }
   };
   

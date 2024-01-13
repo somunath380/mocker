@@ -4,8 +4,6 @@ const {adminAuth, userAuth, basicAuth} = require("../middleware/auth")
 const userHandler = require("../handlers/users_handler")
 
 router.post("/register", userHandler.createUser)
-router.post("/login", userHandler.login)
-router.post("/logout", userAuth, userHandler.logOut)
 router.put("/updaterole", basicAuth, userHandler.updateUserRole)
 router.post("/delete", adminAuth, userHandler.deleteUser)
 router.get("/getall", adminAuth, userHandler.getAllUsers)

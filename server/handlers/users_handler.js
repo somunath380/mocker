@@ -1,11 +1,8 @@
 require('dotenv').config();
 const config = require("../../config")
-const {UserModel} = require("../../models/user_schema")
-const { encryptPassword, isAuthorized } = require("../encryption")
-const jwt = require("jsonwebtoken")
-
-const maxExpiryInSec = 24 * 60
-const jwtSecret = config.secret
+const {UserModel, RefreshTokenModel} = require("../../models/user_schema")
+const {generateRefreshToken, generateAccessToken} = require("../tokens/generate")
+const {encryptPassword} = require("../encryption")
 
 exports.createUser = async (req, res, next) => {
     // body = {'username': 'str', 'email': 'str', 'password': 'str'}
@@ -24,112 +21,44 @@ exports.createUser = async (req, res, next) => {
         } else {
             // else create the user
             const newUser = new UserModel(body);
-            await newUser.validate();
-            await newUser.save();
-            user = {
-                username: newUser.username,
-                login: newUser.logIn
+            try {
+                await newUser.validate();
+            } catch (error) {
+                return res.status(400).json({success: false, error});
             }
-            res.status(200).json({success: true, user, reLogin: true});
+            await newUser.save();
+            // generate refresh token and save it in db
+            const refreshToken = await generateRefreshToken()
+            const newRefreshToken = RefreshTokenModel({
+                token: refreshToken,
+                userId: newUser._id,
+                expiresAt: new Date(Date.now() + config.maxRefreshTokenTTL * 1000)
+            })
+            await newRefreshToken.save();
+            // generate access token
+            const accessToken = await generateAccessToken({"id": newUser._id, "role": newUser.role})
+            // set refresh token in cookie
+            res.cookie(
+                "refreshToken",
+                refreshToken,
+                {
+                    httpOnly: true, 
+                    maxAge: config.maxRefreshTokenTTL * 1000, 
+                    // sameSite: 'strict'
+                    // secure: process.env.NODE_ENV === 'production', // for https
+                }
+            )
+            const user = {
+                username: newUser.username,
+                accesstoken: accessToken
+            }
+            return res.status(200).json({success: true, user, reLogin: true,});
         }
     } catch (error) {
         return res.status(400).json({ success: false, error: error.message});
     }
 }
 
-exports.login = async (req, res, next) => {
-    try {
-        const body = req.body
-        const username = body.username
-        const user = await UserModel.findOne({username})
-        if (!user){
-            return res.status(401).json({
-                success: false,
-                error: "user not found"
-            })
-        } else {
-            const dbPassword = user.password
-            const reqPassword = body.password
-            const isAuthentic = await isAuthorized(reqPassword, dbPassword)
-            if (isAuthentic){
-                // create jwt token
-                // token for re-login
-                const token = jwt.sign(
-                    {
-                        reLogin: false,
-                        role: user.role
-                    },
-                    jwtSecret,
-                    {
-                        expiresIn: maxExpiryInSec
-                    }
-                )
-                res.cookie("jwt", token, {
-                    httpOnly: true,
-                    maxAge: maxExpiryInSec * 1000
-                })
-                user.logIn = true
-                await user.save()
-                res.status(200).json({
-                    success: true,
-                    "user": {
-                        id: user._id,
-                        "username": user.username,
-                        "login": user.logIn
-                    }
-                })
-            } else {
-                return res.status(403).json({
-                    success: false,
-                    message: "incorrect password given"
-                })
-            }
-        }
-    } catch (error) {
-        return res.status(401).json({
-            success: false,
-            message: "error",
-            error: error.message
-        })
-    }
-}
-
-exports.logOut = async (req, res, next) => {
-    try {
-        const body = req.body
-        const username = body.username
-        const user = await UserModel.findOne({username})
-        if (!user){
-            return res.status(401).json({
-                success: false,
-                error: "user not found"
-            })
-        } else {
-            const dbPassword = user.password
-            const reqPassword = body.password
-            const isAuthentic = await isAuthorized(reqPassword, dbPassword)
-            if (isAuthentic) {
-                user.logIn = false
-                await user.save()
-                res.status(200).json({
-                    success: true,
-                    msg: "Logged out successfully"
-                })
-            } else {
-                return res.status(403).json({
-                    success: false,
-                    message: "incorrect password given"
-                })
-            }
-        }
-    } catch (error) {
-        return res.status(401).json({
-            success: false,
-            message: "error",
-            error: error.message
-        })
-    }
-}
 
 exports.updateUserRole = async (req, res, next) => {
     try {
@@ -203,7 +132,7 @@ exports.getAllUsers = async (req, res, next) => {
         res.status(200).json({
             success: true,
             users: users,
-          });
+        });
     } catch (error) {
         return res.status(400).json({success: false, message: "error occured", error: error.message})
     }
@@ -226,7 +155,7 @@ exports.getUser = async (req, res, next) => {
                     "username": user.username,
                     "login": user.logIn
                 }
-              });
+            });
         }
     } catch (error) {
         return res.status(400).json({success: false, message: "error occured", error: error.message})
