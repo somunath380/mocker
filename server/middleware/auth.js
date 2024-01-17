@@ -60,7 +60,6 @@ exports.loginAuth = (req, res, next) => {
             })
         }
         else {
-            // req.body = {"username": req.body.username, "password": req.body.password}
             return next()
         }
     } catch (err) {

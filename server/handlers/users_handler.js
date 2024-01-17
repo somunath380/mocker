@@ -44,8 +44,8 @@ exports.createUser = async (req, res, next) => {
                 {
                     httpOnly: true, 
                     maxAge: config.maxRefreshTokenTTL * 1000, 
-                    // sameSite: 'strict'
-                    // secure: process.env.NODE_ENV === 'production', // for https
+                    sameSite: 'none',
+                    secure: true // for https
                 }
             )
             const user = {
@@ -86,7 +86,9 @@ exports.updateUserRole = async (req, res, next) => {
             )
             res.cookie("jwt", token, {
                 httpOnly: true,
-                maxAge: maxExpiryInSec * 1000
+                maxAge: maxExpiryInSec * 1000,
+                secure: true,
+                sameSite: 'none'
             })
             res.status(201).json({
                 success: true,

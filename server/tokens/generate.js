@@ -9,7 +9,7 @@ exports.generateAccessToken = async (userData) => {
     return jwt.sign(userData, jwtSecret, { expiresIn })
 }
 
-exports.generateRefreshToken = async () => {
+exports.generateRefreshToken = async (user_id) => {
     const expiresIn = config.maxRefreshTokenTTL; // 7 days in secs
-    return jwt.sign({}, jwtSecret, { expiresIn });
+    return jwt.sign({"id": user_id}, jwtSecret, { expiresIn });
 }
