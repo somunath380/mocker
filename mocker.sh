@@ -31,6 +31,10 @@ if [ "$1" = "local" ] && [ "$2" = "start" ]; then
     # start debugging using launch.json
 fi
 
+if [ "$1" = "local" ] && [ "$2" = "rebuild" ]; then
+    docker-compose -f docker-compose-local.yml up  -d --build --force-recreate
+fi
+
 if [ "$1" = "local" ] && [ "$2" = "stop" ]; then
     docker-compose -f docker-compose-local.yml down
 fi

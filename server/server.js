@@ -5,7 +5,7 @@ const apiHandler = require("./routes/index")
 
 const app = express()
 app.use(cors({
-    origin: 'http://localhost:5173', // means only this origin can use cookies set by the backend
+    origin: ['http://127.0.0.1:5173', 'http://localhost:5173'], // means only this origin can use cookies set by the backend
     credentials: true // ui can access the cookie set by backend
 }))
 app.use(express.json())

@@ -129,6 +129,8 @@ exports.getRefreshToken = async (req, res, next) => {
                 maxAge: config.maxRefreshTokenTTL * 1000, 
                 sameSite: 'lax',
                 secure: true, // for https
+                domain: 'http://127.0.0.1',
+                path: '/'
             }
         )
         return res.status(200).json({success: true, accessToken});
@@ -184,8 +186,10 @@ exports.checkUserDetails = async (req, res, next) => {
                 {
                     httpOnly: true, 
                     maxAge: config.maxRefreshTokenTTL * 1000, 
-                    sameSite: 'lax',
-                    secure: true
+                    sameSite: 'None',
+                    secure: true,
+                    // domain: 'http://127.0.0.1:5173',
+                    // path: '/'
                 }
             )
             const userResponse = {
@@ -202,8 +206,9 @@ exports.checkUserDetails = async (req, res, next) => {
 }
 
 exports.getUserDetails = async (req, res, next) => {
+    // validates the refreshToken and sends user details
     try {
-        let refreshToken = reqcookies.refreshToken
+        let refreshToken = req.cookies.refreshToken
         if (!refreshToken) {
             // if no refresh token found re-login
             return res.status(302).json({
@@ -231,7 +236,56 @@ exports.getUserDetails = async (req, res, next) => {
                 error: "wrong user is trying to access resource"
             })
         }
-        return res.status(200).json({success: true, message: "valid token"});
+        const user = await UserModel.findById(decodedToken.id)
+        return res.status(200).json({success: true, message: "valid token", user: {
+            id: user._id,
+            username: user.username,
+            logIn: user.logIn
+        }});
+    } catch (error) {
+        return res.status(401).json({
+            success: false,
+            message: "error",
+            error: error.message
+        })
+    }
+}
+
+exports.getAccessToken = async (req, res, next) => {
+    // check if the refresh token is valid or not
+    try {
+        let refreshToken = req.cookies.refreshToken
+        if (!refreshToken) {
+            // if no refresh token found re-login
+            return res.status(302).json({
+                success: false,
+                reLogin: true,
+                error: "provide cookie in request"
+            })
+        }
+        // verify refresh token from db
+        const storedRefreshToken = await RefreshTokenModel.findOne({ token: refreshToken });
+        if (!storedRefreshToken || new Date(storedRefreshToken.expiresAt) < new Date()) {
+            // If the refresh token is not valid or has expired, send Unauthorized status
+            return res.status(302).json({
+                success: false,
+                reLogin: true,
+                error: "user session expired"
+            })
+        }
+        const dbUserId = storedRefreshToken.userId.toString()
+        // here take the user id from the decrypted jwt token and compare the dbUserId
+        const decodedToken = await jwt.verify(refreshToken, jwtSecret)
+        if (decodedToken?.id && dbUserId !== decodedToken.id) {
+            return res.status(401).json({
+                success: false,
+                error: "wrong user is trying to access resource"
+            })
+        }
+        // generate access token
+        const user = await UserModel.findById(dbUserId)
+        const accessToken = await generateAccessToken({"id": dbUserId, "role": user.role})
+        return res.status(200).json({success: true, accessToken});
     } catch (error) {
         return res.status(401).json({
             success: false,

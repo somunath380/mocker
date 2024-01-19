@@ -9,4 +9,7 @@ router.post("/login", loginAuth, authHandler.checkUserDetails, authHandler.userL
 router.post("/logout", loginAuth, authHandler.userLogout)
 router.get("/refresh/token", authHandler.getRefreshToken)
 
+// get access token using a valid refresh token
+router.get("/access/token", authHandler.getAccessToken)
+
 module.exports = router
