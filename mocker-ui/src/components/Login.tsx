@@ -1,9 +1,12 @@
 import { useNavigate } from "react-router-dom"
-import { useState } from "react";
+import { useState, useContext } from "react";
 import axios from "axios"
+import { useUserContext } from "./UserContext";
 
 
 const Login = () => {
+
+  const { setUser } = useUserContext();
   // for signup page router
   const navigate = useNavigate()
   function handleClick() {
@@ -13,7 +16,7 @@ const Login = () => {
   // for login submit
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
-  const [responseData, setResponseData] = useState(null)
+  const [response, setResponse] = useState({})
 
   const handleUsernameChange = (e: any) => {
     setUsername(e.target.value)
@@ -25,13 +28,15 @@ const Login = () => {
   const handleSubmit = async (event: any) => {
     try {
       event.preventDefault();
-      const url = 'http://localhost:3000/api/v1/auth/login'
+      const url = 'http://127.0.0.1:3000/api/v1/auth/login'
       const username = event.target.elements.username.value
       const password = event.target.elements.password.value
       if (username && password) {
         const response = await axios.post(url, {"username": username, "password": password}, {withCredentials: true})
         if (response.status === 200){
-          setResponseData(response.data)
+          setResponse(response.data)
+          setUser(response.data)
+          navigate("/profile")
         }
       };
     } catch (error) {
@@ -63,7 +68,7 @@ const Login = () => {
             value={password}
             onChange={handlePasswordChange}
             placeholder="Password"
-          ></input>
+          />
         </div>
         <div>
           <button
@@ -83,16 +88,15 @@ const Login = () => {
             </button>
           </div>
         </div>
-      </form>
-      {responseData && (
         <div>
-          <h2>API response: </h2>
+        {/* <UserContext.Provider value={response}>
+          <Dashboard/>
+        </UserContext.Provider> */}
         </div>
-      )}
+      </form>
     </>
   );
 };
 
 export default Login;
-
 
