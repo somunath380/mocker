@@ -1,5 +1,5 @@
 {
-  "name": "mockingbird",
+  "name": "mocker",
   "version": "1.0.0",
   "description": "app to mock api's",
   "main": "index.js",

@@ -1,12 +1,13 @@
 import { useNavigate } from "react-router-dom"
-import { useState, useContext } from "react";
+import { useState } from "react";
 import axios from "axios"
 import { useUserContext } from "./UserContext";
 
 
 const Login = () => {
 
-  const { setUser } = useUserContext();
+  const { setUser, user } = useUserContext();
+
   // for signup page router
   const navigate = useNavigate()
   function handleClick() {
@@ -17,6 +18,7 @@ const Login = () => {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [response, setResponse] = useState({})
+  const [errorMsg, setErrorMsg] = useState("")
 
   const handleUsernameChange = (e: any) => {
     setUsername(e.target.value)
@@ -32,17 +34,35 @@ const Login = () => {
       const username = event.target.elements.username.value
       const password = event.target.elements.password.value
       if (username && password) {
-        const response = await axios.post(url, {"username": username, "password": password}, {withCredentials: true})
+        let headers: object = {}
+        if (user?.accesstoken) {
+          headers = {"Authorization": user.accesstoken}
+        }
+        const response = await axios.post(url, {"username": username, "password": password}, {withCredentials: true, headers})
         if (response.status === 200){
           setResponse(response.data)
-          setUser(response.data)
+          setUser(user)
+          alert("Login successful")
           navigate("/profile")
         }
       };
-    } catch (error) {
-      console.log(error);
+    } catch (error: any) {
+      const errResponse = error.response.data
+      console.log(errResponse.error);
+      // have to catch the error and display it on screen
+      setErrorMsg(errResponse.error)
     }
   }
+
+  // display error on screen
+  const Error = () => {
+    return <><div>
+        <h2>Error</h2>
+        <h3>{errorMsg}</h3>
+      </div>
+      </>
+  }
+
   return (
     <>
       {/* <Common/> */}
@@ -89,11 +109,9 @@ const Login = () => {
           </div>
         </div>
         <div>
-        {/* <UserContext.Provider value={response}>
-          <Dashboard/>
-        </UserContext.Provider> */}
         </div>
       </form>
+      {errorMsg && <Error/>}
     </>
   );
 };

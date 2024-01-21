@@ -15,8 +15,8 @@ exports.createUrl = async (req, res, next) => {
         const newUrl = new UrlModel(reqBody);
         try {
             await newUrl.validate()
-        } catch (error) {
-            return res.status(400).json({success: false, error});
+        } catch (err) {
+            return res.status(400).json({success: false, error: err.message});
         }
         // check if that url is already created or not
         // by getting all the urls of that particular user
@@ -65,7 +65,7 @@ exports.createUrl = async (req, res, next) => {
             }
         } else {
             await newUrl.save()
-            return res.status(200).json({success: true, message: "url added"});
+            return res.status(200).json({success: true, message: "url added", isModified: false});
         }
         // else process the request
     } catch (error) {

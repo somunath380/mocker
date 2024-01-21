@@ -7,6 +7,7 @@ const jwt = require("jsonwebtoken")
 const jwtSecret = config.secret
 
 exports.userLogin = async (req, res, next) => {
+    console.log("userLogin api is called...");
     try {
         // check then bearer auth token
         const body = req.body
@@ -79,6 +80,7 @@ exports.userLogout = async (req, res, next) => {
 }
 
 exports.getRefreshToken = async (req, res, next) => {
+    console.log("getRefreshToken api is called...");
     try {
         // get refresh token from cookie
         let refreshToken = req.cookies.refreshToken
@@ -129,8 +131,6 @@ exports.getRefreshToken = async (req, res, next) => {
                 maxAge: config.maxRefreshTokenTTL * 1000, 
                 sameSite: 'lax',
                 secure: true, // for https
-                domain: 'http://127.0.0.1',
-                path: '/'
             }
         )
         return res.status(200).json({success: true, accessToken});
@@ -144,7 +144,8 @@ exports.getRefreshToken = async (req, res, next) => {
 }
 
 
-exports.checkUserDetails = async (req, res, next) => {
+exports.generateTokens = async (req, res, next) => {
+    console.log("generateTokens api token api is called...");
     try {
         const body = req.body
         if (body?.skip) {
@@ -197,7 +198,8 @@ exports.checkUserDetails = async (req, res, next) => {
                 username: user.username,
                 accesstoken: accessToken
             }
-            res.status(200).json({success: true, userResponse, reLogin: true,});
+            const reLogin = user.logIn? false : true
+            res.status(200).json({success: true, user: userResponse, reLogin});
             next("route")
         }
     } catch (error) {
@@ -205,8 +207,9 @@ exports.checkUserDetails = async (req, res, next) => {
     }
 }
 
-exports.getUserDetails = async (req, res, next) => {
+exports.validateRefreshToken = async (req, res, next) => {
     // validates the refreshToken and sends user details
+    console.log("validateRefreshToken api token api is called...");
     try {
         let refreshToken = req.cookies.refreshToken
         if (!refreshToken) {
@@ -253,6 +256,7 @@ exports.getUserDetails = async (req, res, next) => {
 
 exports.getAccessToken = async (req, res, next) => {
     // check if the refresh token is valid or not
+    console.log("getAccessToken api is called...");
     try {
         let refreshToken = req.cookies.refreshToken
         if (!refreshToken) {

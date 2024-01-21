@@ -5,9 +5,9 @@ services:
     image: mongo:4.2.0-bionic
     container_name: mocker_db
     ports:
-      - 27018:27017
+      - 27017:27017
     environment:
-      - DATABASE_PORT=27018
+      - DATABASE_PORT=27017
     volumes:
       - mocker_db:/data/db
     command: mongod --port 27017

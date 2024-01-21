@@ -7,6 +7,8 @@ router.post("/register", userHandler.createUser)
 router.put("/updaterole", adminAuth, userHandler.updateUserRole)
 router.post("/delete", adminAuth, userHandler.deleteUser)
 router.get("/getall", adminAuth, userHandler.getAllUsers)
-router.get("/get/:id", userAuth, userHandler.getUser)
+
+// get specific user details, not adding :id in param because in the userAuth the param is auto set from the refresh token
+router.get("/get", userAuth, userHandler.getUser)
 
 module.exports = router

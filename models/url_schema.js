@@ -13,18 +13,6 @@ const UrlSchema = new mongoose.Schema({
         unique: true,
         index: true
     },
-    // identifier: {
-    //     type: String,
-    //     index: true,
-    //     unique: true,
-    //     required: true,
-    //     validate: {
-    //         validator: function(value) {
-    //             return typeof value === 'string';
-    //         }, // Use a custom validation function
-    //         message: 'Identifier should be a string' // Error message if validation fails
-    //     }
-    // },
     filepath: {
         type: String,
         required: false,

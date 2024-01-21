@@ -6,6 +6,7 @@ const {encryptPassword} = require("../encryption")
 
 exports.createUser = async (req, res, next) => {
     // body = {'username': 'str', 'email': 'str', 'password': 'str'}
+    console.log("createUser api is called...");
     try {
         const body = req.body;
         const password = body.password
@@ -23,12 +24,12 @@ exports.createUser = async (req, res, next) => {
             const newUser = new UserModel(body);
             try {
                 await newUser.validate();
-            } catch (error) {
-                return res.status(400).json({success: false, error});
+            } catch (err) {
+                return res.status(400).json({success: false, error: err.message});
             }
             await newUser.save();
             // generate refresh token and save it in db
-            const refreshToken = await generateRefreshToken()
+            const refreshToken = await generateRefreshToken(newUser._id)
             const newRefreshToken = RefreshTokenModel({
                 token: refreshToken,
                 userId: newUser._id,
@@ -44,7 +45,7 @@ exports.createUser = async (req, res, next) => {
                 {
                     httpOnly: true, 
                     maxAge: config.maxRefreshTokenTTL * 1000, 
-                    sameSite: 'none',
+                    sameSite: 'None',
                     secure: true // for https
                 }
             )
@@ -143,7 +144,7 @@ exports.getAllUsers = async (req, res, next) => {
 
 exports.getUser = async (req, res, next) => {
     try {
-        const id = req.params.id
+        const id = req.params.userid
         const user = await UserModel.findById(id)
         if (!user) {
             return res.status(400).json({
@@ -156,7 +157,8 @@ exports.getUser = async (req, res, next) => {
                 "user": {
                     id: user._id,
                     "username": user.username,
-                    "login": user.logIn
+                    "login": user.logIn,
+                    "accesstoken": req.headers['authorization']
                 }
             });
         }

@@ -5,7 +5,7 @@ const config = {
         port: parseInt(process.env.SERVER_PORT, 10) || 3000,
       },
       database: {
-        db_url: process.env.DB_URL || 'mongodb://localhost:27018/mockingbird'
+        db_url: process.env.DB_URL || 'mongodb://localhost:27017/mocker'
       },
       secret: process.env.SECRET,
       superuser: process.env.SUPERUSER || 'somu',
