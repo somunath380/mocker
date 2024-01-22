@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate} from "react-router-dom"
 import { useUserContext } from './UserContext';
-import axios from 'axios';
+import { addUrlOfUser, getAccessToken, getAllUrlsOfUser, getDetailsOfAUser } from './apiCalls';
 
 
 const Dashboard = () => {
@@ -15,12 +15,10 @@ const Dashboard = () => {
     const getAndSetNewAccessToken = async () => {
         // makes api call with refreshToken cookies to get new access token        
         try {
-            const url = 'http://127.0.0.1:3000/api/v1/auth/access/token'
-            const response = await axios.get(url, {
-                withCredentials: true})
+            const response = await getAccessToken()
             if (response.status === 200){
-                setAccessToken(response.data.accessToken)
-                return response.data.accessToken
+                setAccessToken(response.data.accesstoken)
+                return response.data.accesstoken
             }
         } catch (error: any) {
             // if status code is 302 means re-login
@@ -39,11 +37,7 @@ const Dashboard = () => {
 
     const getAllUrls = async () => {
         try {
-            const url = `http://localhost:3000/api/v1/urls/${userId}/getall`
-            const headers = {
-                'Authorization': accessToken
-            }
-            const response = await axios.get(url, {withCredentials: true, headers})
+            const response = await getAllUrlsOfUser(userId, accessToken)
             setUrlResponse([...response.data.url]);
             if (response.data.url.length == 0) {
                 setNoUrlMsg("No Url is mocked right now.")
@@ -64,9 +58,9 @@ const Dashboard = () => {
         return <><div>
             <h2>Error</h2>
             <h3>{errorMsg}</h3>
-          </div>
-          </>
-      }
+            </div>
+            </>
+        }
 
     // return SetUrl form
     const SetUrlForm = () => {
@@ -79,10 +73,6 @@ const Dashboard = () => {
         const createUrl = async (event: any) => {
             try {
                 event.preventDefault();
-                const url = `http://localhost:3000/api/v1/urls/${userId}/add`
-                const reqHeaders = {
-                    'Authorization': accessToken
-                }
                 const data = {
                     userid: userId,
                     url: mockUrl,
@@ -96,9 +86,7 @@ const Dashboard = () => {
                         username: user.username
                     }
                 }
-                const response = await axios.post(url, 
-                    data, 
-                    {withCredentials: true, "headers": reqHeaders})
+                const response = await addUrlOfUser(userId, accessToken, data)
                 if (response.status == 200 && !response.data.isModified) {
                     // means new url is added
                     alert(response.data.message)
@@ -172,16 +160,19 @@ const Dashboard = () => {
 
     const getAndSetUserDetails = async () => {
         const accesstoken = await getAndSetNewAccessToken()
-        const url = "http://localhost:3000/api/v1/users/get"
-        const headers={"Authorization": accesstoken}
-        const response = await axios.get(url, {withCredentials: true, headers})
-        if (response.status === 200) {
-            const userDetails = {
-                id: response.data.user.id,
-                username: response.data.user.username,
-                accesstoken: response.data.user.accesstoken
+        try {
+            const response = await getDetailsOfAUser(accesstoken)
+            if (response.status === 200) {
+                const userDetails = {
+                    id: response.data.user.id,
+                    username: response.data.user.username,
+                    accesstoken: response.data.user.accesstoken
+                }
+                setUserDetails(userDetails)
             }
-            setUserDetails(userDetails)
+        } catch (error: any) {
+            const errMsg = error.response.data.error
+            setErrorMsg(errMsg)
         }
     }
 

@@ -1,32 +1,35 @@
 import { useNavigate} from "react-router-dom"
 import { useEffect } from "react"
-// import Cookies from 'js-cookie';
-import axios from "axios";
 import { useUserContext } from "./UserContext";
+import { verifyRefreshToken, getAccessToken } from "./apiCalls";
 
 const Root = () => {
   const { setUser } = useUserContext();
   const navigate = useNavigate()
-  const getAccessToken = async () => {
+  const fetchAccessToken = async () => {
     try {
-      const url = "http://127.0.0.1:3000/api/v1/auth/access/token"
-      const response = await axios.get(url, {
-        withCredentials: true})
+      const response = await getAccessToken()
       if (response.status === 200) {
-        return response.data.accessToken
+        return response.data.accesstoken
       }
     } catch (error: any) {
-      console.log("failed to get access token maybe refresh token expired, error message: ", error.response.data.error)
-      navigate("/login")
+      const status = error.response.status
+      const errMsg = error.response.data.error
+      if (status === 302) {
+        alert(`you need to login: ${errMsg}`)
+        navigate("/login")
+      }
+      else if (status === 401) {
+        alert(`Error: ${errMsg}`)
+        navigate("/login")
+      }
     }
   }
   const checkTokenValidity = async () => {
     try {
-      const url = 'http://127.0.0.1:3000/api/v1/auth/validate/token'
-      const response = await axios.get(url, {
-        withCredentials: true})
+      const response = await verifyRefreshToken()
       if (response.status === 200) {
-        const accesstoken = await getAccessToken()
+        const accesstoken = await fetchAccessToken()
         const userData = {
           success: true,
           id: response.data.user.id,
@@ -37,11 +40,15 @@ const Root = () => {
         navigate("/profile")
       }
     } catch (error: any) {
-      console.log("redirecting to login page");
-      const errResponse = error.response.data
-      if (errResponse && errResponse?.reLogin) {
-        console.log(`error msg: ${errResponse.error}`);
+      const status = error.response.status
+      const errMsg = error.response.data.error
+      if (status === 302) {
+        alert(errMsg)
         navigate("/login")
+      }
+      else if (status === 401) {
+        alert(`Error: ${errMsg}`)
+        navigate("/")
       }
     }
   }

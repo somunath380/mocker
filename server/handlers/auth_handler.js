@@ -289,7 +289,7 @@ exports.getAccessToken = async (req, res, next) => {
         // generate access token
         const user = await UserModel.findById(dbUserId)
         const accessToken = await generateAccessToken({"id": dbUserId, "role": user.role})
-        return res.status(200).json({success: true, accessToken});
+        return res.status(200).json({success: true, accesstoken: accessToken});
     } catch (error) {
         return res.status(401).json({
             success: false,

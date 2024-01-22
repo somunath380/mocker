@@ -1,13 +1,11 @@
 import { useNavigate } from "react-router-dom"
 import { useState } from "react";
-import axios from "axios"
-import { useUserContext } from "./UserContext";
+import { logInUser } from "./apiCalls";
+import { useUserContext } from './UserContext';
 
 
 const Login = () => {
-
-  const { setUser, user } = useUserContext();
-
+  const { user } = useUserContext();
   // for signup page router
   const navigate = useNavigate()
   function handleClick() {
@@ -17,8 +15,6 @@ const Login = () => {
   // for login submit
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
-  const [response, setResponse] = useState({})
-  const [errorMsg, setErrorMsg] = useState("")
 
   const handleUsernameChange = (e: any) => {
     setUsername(e.target.value)
@@ -28,41 +24,29 @@ const Login = () => {
   }
 
   const handleSubmit = async (event: any) => {
+    let response
+    let accessToken
     try {
       event.preventDefault();
-      const url = 'http://127.0.0.1:3000/api/v1/auth/login'
+      if (user) {
+        accessToken = user.accesstoken
+      }
       const username = event.target.elements.username.value
       const password = event.target.elements.password.value
-      if (username && password) {
-        let headers: object = {}
-        if (user?.accesstoken) {
-          headers = {"Authorization": user.accesstoken}
-        }
-        const response = await axios.post(url, {"username": username, "password": password}, {withCredentials: true, headers})
-        if (response.status === 200){
-          setResponse(response.data)
-          setUser(user)
-          alert("Login successful")
-          navigate("/profile")
-        }
-      };
+      if (accessToken) {
+        response = await logInUser(username, password, accessToken)
+      }
+      else {
+        response = await logInUser(username, password)
+      }
+      if (response.status === 200){
+        navigate("/profile")
+      }
     } catch (error: any) {
-      const errResponse = error.response.data
-      console.log(errResponse.error);
-      // have to catch the error and display it on screen
-      setErrorMsg(errResponse.error)
+      alert(`Error: ${error.response.data.error}`)
+      navigate("/")
     }
   }
-
-  // display error on screen
-  const Error = () => {
-    return <><div>
-        <h2>Error</h2>
-        <h3>{errorMsg}</h3>
-      </div>
-      </>
-  }
-
   return (
     <>
       {/* <Common/> */}
@@ -73,6 +57,7 @@ const Login = () => {
             type="text"
             className="form-control"
             id="username"
+            required
             value={username}
             placeholder="Enter username"
             onChange={handleUsernameChange}
@@ -84,6 +69,7 @@ const Login = () => {
           <input
             type="password"
             className="form-control"
+            required
             id="password"
             value={password}
             onChange={handlePasswordChange}
@@ -111,7 +97,6 @@ const Login = () => {
         <div>
         </div>
       </form>
-      {errorMsg && <Error/>}
     </>
   );
 };
