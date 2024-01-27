@@ -153,3 +153,32 @@ export const getAllUrlsAPI = async (userid, accesstoken) => {
         return {error, status, errMsg}
     }
 }
+
+export const registerUrlAPI = async (userid, accesstoken, payload) => {
+    // adds a new mock url of a user
+    // 401 {success: false, message: "Not Authorized"}
+    // 400 {success: false, error: err.message}
+    // 400 {success: false, message: "Url already exists"}
+    // 200 {success: true, message: "Url updated", isModified: true, urlData: url, updatedData: difference}
+    // 400 {success: false, message: "Url not updated"}
+    // 200 {success: true, message: "url added", isModified: false}
+    // 403 success: false, message: error.message
+    const endpoint = baseUrl + `/urls/${userid}/add`
+    const options = {
+        withCredentials: true,
+        headers: {'Content-Type': 'application/json', 'Authorization': accesstoken}
+    }
+    try {
+        const response = await axios.post(endpoint, payload, options)
+        return response.data
+    } catch (error) {
+        const status = error.response.status
+        let errMsg
+        if (error.response.data?.message){
+            errMsg = error.response.data?.message
+        } else {
+            errMsg = error.response.data.error
+        }
+        return {error, status, errMsg}
+    }
+}
