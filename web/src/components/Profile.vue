@@ -42,7 +42,7 @@
                     HEADERS: {{ item?.headers ? JSON.stringify(item.headers, null, 2) : JSON.stringify({}, null, 2) }} <br />
                     PAYLOAD: {{ item?.body ? JSON.stringify(item.body, null, 2) : JSON.stringify({}, null, 2) }} <br />
                     RESPONSE: {{ JSON.stringify(item.response, null, 2) }} <br />
-                    HTTP STATUS: {{ item.status_code }}
+                    HTTP STATUS: {{ item.status_code }} <br> <br>
                 </div>
             </li>
         </ul>
@@ -149,6 +149,8 @@ export default {
                 }
             } else {
                 this.fetchUserDetails()
+                this.getAccessToken()
+                await this.fetchAllUrls()
             }
         },
         async fetchUserDetails() {
@@ -185,6 +187,9 @@ export default {
                 this.showNotification = true
                 this.success = false
                 this.msg = response.errMsg
+                if (response?.status === 302){
+                    // need to redirect to the login page
+                }
             } else {
                 // set in localstorage
                 localStorage.setItem('accessToken', JSON.stringify(response.accesstoken))

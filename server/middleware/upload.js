@@ -3,7 +3,7 @@ const path = require("path")
 const fs = require("fs")
 const multer = require('multer');
 const absolutePath = process.env.ABSOLUTEUPLOADPATH
-
+const uploadPath = path.join(path.join(path.join(__dirname, '..'), '..'), 'uploads')
 
 function checkOrCreateFolder() {
     if (!fs.existsSync(absolutePath)) {

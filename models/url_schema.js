@@ -16,7 +16,6 @@ const UrlSchema = new mongoose.Schema({
     filepath: {
         type: String,
         required: false,
-        default: false
     },
     url: {
         type: String,
@@ -54,7 +53,6 @@ const UrlSchema = new mongoose.Schema({
     response: {
         type: mongoose.Schema.Types.Mixed,
         required: true,
-        default: {},
         validate: {
             validator: function(value) {
                 return typeof value === 'object' && !Array.isArray(value);
@@ -62,6 +60,7 @@ const UrlSchema = new mongoose.Schema({
             message: 'response must be a non-array object' // Error message if validation fails
         }
     },
+    // this headers defines the response headers, the response
     headers: {
         type: mongoose.Schema.Types.Mixed,
         required: true,
@@ -84,7 +83,6 @@ const UrlSchema = new mongoose.Schema({
     execute_file: {
         type: Boolean,
         required: false,
-        default: false
     },
     user_details: {
         id: {type: ObjectId, required: true, index: true, unique: true},

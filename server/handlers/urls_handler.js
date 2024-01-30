@@ -56,7 +56,7 @@ exports.createUrl = async (req, res, next) => {
                 for (const [key, value] of Object.entries(difference)) {
                     url[key] = reqBody[key]
                 }
-                const updatedUrl = await UrlModel.findOneAndUpdate(url.id, difference, {new: true, runValidators: true})
+                const updatedUrl = await UrlModel.findOneAndUpdate(url._id, difference, {new: true, runValidators: true})
                 if (updatedUrl) {
                     return res.status(200).json({success: true, message: "Url updated", isModified: true, urlData: url, updatedData: difference});
                 } else {
@@ -118,7 +118,7 @@ exports.updateUrl = async (req, res, next) => {
             url[key] = reqBody[key]
         }
         await url.validate()
-        const updatedUrl = await UrlModel.findOneAndUpdate(url.id, reqBody, {new: true, runValidators: true})
+        const updatedUrl = await UrlModel.findOneAndUpdate(url._id, reqBody, {new: true, runValidators: true})
         return res.status(200).json({success: true, message: "Url updated", isModified: true, urlData: updatedUrl});
     } catch (err) {
         return res.status(403).json({
@@ -206,7 +206,7 @@ exports.uploadFile = async (req, res, next) => {
                 for (const [key, value] of Object.entries(difference)) {
                     url[key] = reqBody[key]
                 }
-                const updatedUrl = await UrlModel.findOneAndUpdate(url.id, difference, {new: true, runValidators: true})
+                const updatedUrl = await UrlModel.findOneAndUpdate(url._id, difference, {new: true, runValidators: true})
                 if (updatedUrl) {
                     return res.status(200).json({success: true, message: "Url updated", isModified: true, urlData: url, updatedData: difference});
                 } else {
