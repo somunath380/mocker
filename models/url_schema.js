@@ -87,8 +87,40 @@ const UrlSchema = new mongoose.Schema({
     user_details: {
         id: {type: ObjectId, required: true, index: true, unique: true},
         username: {type: String, required: true, index: true, unique: true}
+    },
+    createdDate: {
+        type: String,
+        default: function () {
+            return this.formattedDate(new Date())
+        }
     }
 })
+
+UrlSchema.methods.formattedDate = function (date){
+    let day = date.getDate();
+    let month = date.getMonth() + 1; // Month is zero-based
+    const year = date.getFullYear();
+    let hours = date.getHours() % 12 || 12; // Convert to 12-hour format
+    let minutes = date.getMinutes();
+    let seconds = date.getSeconds();
+    if (day < 10){
+        day = '0' + day.toString()
+    }
+    if (month < 10){
+        month = '0' + month.toString()
+    }
+    if (hours < 10){
+        hours = '0' + hours.toString()
+    }
+    if (minutes < 10){
+        minutes = '0' + minutes.toString()
+    }
+    if (seconds < 10){
+        seconds = '0' + seconds.toString()
+    }
+    const ampm = date.getHours() >= 12 ? 'PM' : 'AM';
+    return `${day}/${month}/${year}, ${hours}:${minutes}:${seconds} ${ampm}`;
+}
 
 const UrlModel = mongoose.model('Url', UrlSchema)
 module.exports = {UrlModel}

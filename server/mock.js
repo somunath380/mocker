@@ -28,7 +28,7 @@ async function mockHandler(req, res, next) {
         
         // if no headers found or if it is {}
         if (!headers) {
-            return res.status(200).json(url.response)
+            return res.status(url.status_code).json(url.response)
         }
         // else take the Content-Type key and send send response accordingly
         const resType = headers["Content-Type"]

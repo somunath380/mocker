@@ -1,6 +1,13 @@
 <template>
-    <h2>{{ message? $route.query.message : this.message }}</h2>
-    <Notify :success="this.success" :message="this.msg" v-if="showNotification"/>
+    <h1>{{ 'Login to use Mocker' }}</h1> <br>
+    <div class="snackbar">
+        <v-snackbar v-model="showNotification" :timeout="2000" color="success" location="top">
+            <span>{{this.msg}}</span>
+            <template v-slot:actions>
+                <v-btn color="white" variant="text" @click="showNotification = false">Close</v-btn>
+            </template>
+        </v-snackbar>
+    </div>
     <form @submit.prevent="logInUser">
         <div class="mb-3">
             <label class="form-label">Username</label>
@@ -21,19 +28,13 @@
 <script>
 
 import { logInUserAPI } from '../API';
-import Notify from '../common/Notify.vue';
 // import Signup from './Signup.vue';
 
     export default {
-        components: {
-            Notify,
-        },
         data() {
             return {
                 username: null,
                 password: null,
-                success: false, // this is for sending error message to Notify
-                message: 'Login to use Mocker',
                 msg: '',
                 signUpPage: '/signup',
                 profilePage: '/profile',
@@ -49,16 +50,23 @@ import Notify from '../common/Notify.vue';
                     if (response?.error) {
                     // show error dialog box
                     this.showNotification = true
-                    this.success = false
-                    this.msg = response.errMsg
-                    if (response?.status === 401){
+                    if (response?.status === 405){
                         // if no user is found then show signup page button
+                        this.msg = "no user found"
                         this.showSignUpButton = true
+                    }
+                    else if (response.status === 403){
+                        this.msg = "not authorized"
+                    }
+                    else if (response.status === 400){
+                        this.msg = "incorrect username or password"
+                    }
+                    else if (response.status === 500){
+                        this.msg = response.errMsg
                     }
                 } else {
                     // go to the dashboard
                     this.showNotification = true
-                    this.success = true
                     this.msg = 'login successful'
                     let user = {
                         id: response.user.id,

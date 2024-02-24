@@ -17,7 +17,7 @@ exports.createUser = async (req, res, next) => {
         if (user){
             return res.status(401).json({
                 success: false,
-                error: "user already exists"
+                message: "user already exists"
             })
         } else {
             // else create the user
@@ -25,7 +25,8 @@ exports.createUser = async (req, res, next) => {
             try {
                 await newUser.validate();
             } catch (err) {
-                return res.status(400).json({success: false, error: err.message});
+                console.log("error occured while creating user: ", err);
+                return res.status(501).json({success: false, message: "some issue happend"});
             }
             await newUser.save();
             // generate refresh token and save it in db
@@ -57,7 +58,8 @@ exports.createUser = async (req, res, next) => {
             return res.status(200).json({success: true, user, reLogin: true,});
         }
     } catch (error) {
-        return res.status(400).json({ success: false, error: error.message});
+        console.log("error occured while creating user: ", error);
+        return res.status(500).json({ success: false, message: error.message});
     }
 }
 
@@ -120,13 +122,13 @@ exports.deleteUser = async (req, res, next) => {
             })
         } else {
             await user.deleteOne()
-            res.status(200).json({
+            return res.status(200).json({
                 success: true,
                 message: "user deleted"
             })
         }
     } catch (error) {
-        return res.status(400).json({success: false, message: "error occured", error: error.message})
+        return res.status(400).json({success: false, message: error.message})
     }
 }
 
@@ -138,7 +140,7 @@ exports.getAllUsers = async (req, res, next) => {
             users: users,
         });
     } catch (error) {
-        return res.status(400).json({success: false, message: "error occured", error: error.message})
+        return res.status(400).json({success: false, message: error.message})
     }
 }
 
@@ -152,7 +154,7 @@ exports.getUser = async (req, res, next) => {
                 message: "no user found",
             }) 
         } else {
-            res.status(200).json({
+            return res.status(200).json({
                 success: true,
                 "user": {
                     id: user._id,
@@ -163,6 +165,6 @@ exports.getUser = async (req, res, next) => {
             });
         }
     } catch (error) {
-        return res.status(400).json({success: false, message: "error occured", error: error.message})
+        return res.status(500).json({success: false, message: error.message})
     }
 }

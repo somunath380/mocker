@@ -30,13 +30,13 @@ exports.adminAuth = (req, res, next) => {
     const user = basicAuth(req);
     if (!user || !user.name || !user.pass) {
         res.set('WWW-Authenticate', 'Basic realm=authorization Required');
-        return res.status(401).send('Unauthorized');
+        return res.status(401).json({success: false, message: 'Unauthorized'})
     }
     if (user.name === config.superuser && user.pass === config.superpwd) {
         return next(); // Authentication successful, proceed to the next middleware or route handler
     } else {
         res.set('WWW-Authenticate', 'Basic realm=authorization Required');
-        return res.status(401).send('Unauthorized');
+        return res.status(401).json({success: false, message: 'Unauthorized'})
     }
 }
 
@@ -54,7 +54,7 @@ exports.loginAuth = (req, res, next) => {
                         req.body.skip = true
                         return next()
                     } else {
-                        return res.status(401).json({success: false, message: "Not Authorized"})
+                        return res.status(403).json({success: false, message: "Not Authorized"})
                     }
                 }
             })
@@ -63,6 +63,6 @@ exports.loginAuth = (req, res, next) => {
             return next()
         }
     } catch (err) {
-        return res.status(401).json({success: false, error: err.message})
+        return res.status(401).json({success: false, message: err.message})
     }
 }

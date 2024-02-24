@@ -18,7 +18,7 @@ exports.userLogin = async (req, res, next) => {
         if (!user){
             return res.status(401).json({
                 success: false,
-                error: "user not found"
+                message: "user not found"
             })
         } else {
             const dbPassword = user.password
@@ -26,7 +26,7 @@ exports.userLogin = async (req, res, next) => {
             if (isAuthentic){
                 user.logIn = true
                 await user.save()
-                res.status(200).json({
+                return res.status(200).json({
                     success: true,
                     "user": {
                         id: user._id,
@@ -44,8 +44,7 @@ exports.userLogin = async (req, res, next) => {
     } catch (error) {
         return res.status(401).json({
             success: false,
-            message: "error",
-            error: error.message
+            message: error.message
         })
     }
 }
@@ -60,21 +59,20 @@ exports.userLogout = async (req, res, next) => {
         if (!user){
             return res.status(401).json({
                 success: false,
-                error: "user not found"
+                message: "user not found"
             })
         } else {
             user.logIn = false
             await user.save()
             return res.status(200).json({
                 success: true,
-                msg: "Logged out successfully"
+                message: "Logged out successfully"
             })
         }
     } catch (error) {
         return res.status(401).json({
             success: false,
-            message: "error",
-            error: error.message
+            message: error.message
         })
     }
 }
@@ -87,7 +85,7 @@ exports.getRefreshToken = async (req, res, next) => {
         if (!refreshToken) {
             return res.status(401).json({
                 success: false,
-                error: "provide refresh token"
+                message: "provide refresh token"
             })
         }
         // verify refresh token from db
@@ -96,7 +94,7 @@ exports.getRefreshToken = async (req, res, next) => {
             // If the refresh token is not valid or has expired, send Unauthorized status
             return res.status(401).json({
                 success: false,
-                error: "user session expired, please re-login"
+                message: "user session expired, please re-login"
             })
         }
         // check the user id is same or not
@@ -106,7 +104,7 @@ exports.getRefreshToken = async (req, res, next) => {
         if (decodedToken?.id && dbUserId !== decodedToken.id) {
             return res.status(401).json({
                 success: false,
-                error: "Invalid token passed!"
+                message: "Invalid token passed!"
             })
         }
         // create new access token and refresh token
@@ -137,8 +135,7 @@ exports.getRefreshToken = async (req, res, next) => {
     } catch (error) {
         return res.status(401).json({
             success: false,
-            message: "error",
-            error: error.message
+            message: error.message
         })
     }
 }
@@ -155,15 +152,15 @@ exports.generateTokens = async (req, res, next) => {
         const reqPassword = body.password
         const user = await UserModel.findOne({username})
         if (!user){
-            return res.status(401).json({
+            return res.status(405).json({
                 success: false,
-                error: "user not found"
+                message: "user not found"
             })
         } else {
             const dbPassword = user.password
             const isAuthentic = await isAuthorized(reqPassword, dbPassword)
             if (!isAuthentic) {
-                return res.status(403).json({
+                return res.status(400).json({
                     success: false,
                     message: "incorrect login details given"
                 })
@@ -199,12 +196,42 @@ exports.generateTokens = async (req, res, next) => {
                 accesstoken: accessToken
             }
             const reLogin = user.logIn? false : true
-            res.status(200).json({success: true, user: userResponse, reLogin});
-            next("route")
+            return res.status(200).json({success: true, user: userResponse, reLogin});
+            // using return here so the next handler will not be called
+            // next("route")
         }
     } catch (error) {
-        return res.status(400).json({ success: false, error: error.message});
+        return res.status(500).json({ success: false, message: error.message});
     }
+}
+
+exports.validateAccessToken = async (req, res, next) => {
+    // validates the refreshToken first and then validates accessToken and sends true or false
+    console.log("validateAccessToken api token api is called...");
+    const accessToken = req.headers['authorization']
+    let refreshToken = req.cookies.refreshToken
+    if (!refreshToken){
+        return res.status(401).json({ success: false })
+    }
+    const storedRefreshToken = await RefreshTokenModel.findOne({ token: refreshToken });
+    if (!storedRefreshToken || new Date(storedRefreshToken.expiresAt) < new Date()) {
+        // If the refresh token is not valid or has expired, send Unauthorized status
+        return res.status(401).json({ success: false })
+    }
+    const dbUserId = storedRefreshToken.userId.toString()
+    const decodedToken = await jwt.verify(refreshToken, jwtSecret)
+    if (decodedToken?.id && dbUserId !== decodedToken.id){
+        return res.status(401).json({ success: false })
+    }
+    if (!accessToken){
+        return res.status(401).json({ success: false })
+    }
+    jwt.verify(accessToken, jwtSecret, (err, decodedToken) => {
+        if (err) {
+            return res.status(401).json({success: false})
+        }
+        return res.status(200).json({ success: true})
+    })
 }
 
 exports.validateRefreshToken = async (req, res, next) => {
@@ -214,10 +241,10 @@ exports.validateRefreshToken = async (req, res, next) => {
         let refreshToken = req.cookies.refreshToken
         if (!refreshToken) {
             // if no refresh token found re-login
-            return res.status(302).json({
+            return res.status(400).json({
                 success: false,
                 reLogin: true,
-                error: "provide cookie in request"
+                message: "no cookie set"
             })
         }
         // verify refresh token from db
@@ -227,7 +254,7 @@ exports.validateRefreshToken = async (req, res, next) => {
             return res.status(302).json({
                 success: false,
                 reLogin: true,
-                error: "user session expired"
+                message: "session expired, please re login"
             })
         }
         const dbUserId = storedRefreshToken.userId.toString()
@@ -236,7 +263,7 @@ exports.validateRefreshToken = async (req, res, next) => {
         if (decodedToken?.id && dbUserId !== decodedToken.id) {
             return res.status(401).json({
                 success: false,
-                error: "wrong user is trying to access resource"
+                message: "wrong user is trying to access resource"
             })
         }
         const user = await UserModel.findById(decodedToken.id)
@@ -248,8 +275,7 @@ exports.validateRefreshToken = async (req, res, next) => {
     } catch (error) {
         return res.status(401).json({
             success: false,
-            message: "error",
-            error: error.message
+            message: error.message
         })
     }
 }
@@ -264,7 +290,7 @@ exports.getAccessToken = async (req, res, next) => {
             return res.status(302).json({
                 success: false,
                 reLogin: true,
-                error: "provide cookie in request"
+                message: "provide cookie in request"
             })
         }
         // verify refresh token from db
@@ -274,7 +300,7 @@ exports.getAccessToken = async (req, res, next) => {
             return res.status(302).json({
                 success: false,
                 reLogin: true,
-                error: "user session expired"
+                message: "user session expired"
             })
         }
         const dbUserId = storedRefreshToken.userId.toString()
@@ -283,7 +309,7 @@ exports.getAccessToken = async (req, res, next) => {
         if (decodedToken?.id && dbUserId !== decodedToken.id) {
             return res.status(401).json({
                 success: false,
-                error: "wrong user is trying to access resource"
+                message: "wrong user is trying to access resource"
             })
         }
         // generate access token
@@ -291,10 +317,10 @@ exports.getAccessToken = async (req, res, next) => {
         const accessToken = await generateAccessToken({"id": dbUserId, "role": user.role})
         return res.status(200).json({success: true, accesstoken: accessToken});
     } catch (error) {
-        return res.status(401).json({
+        return res.status(500).json({
             success: false,
             message: "error",
-            error: error.message
+            message: error.message
         })
     }
 }

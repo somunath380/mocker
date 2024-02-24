@@ -1,9 +1,22 @@
 <template lang="">
     <div>
+        <div class="snackbar">
+            <v-snackbar v-model="showNotification" :timeout="2000" color="success" location="top">
+                <span>{{this.msg}}</span>
+                <template v-slot:actions>
+                    <v-btn
+                    color="white"
+                    variant="text"
+                    @click="showNotification = false"
+                    >
+                    Close
+                    </v-btn>
+                </template>
+            </v-snackbar>
+        </div>
         <div class="root">
             <h1>Hello And Welcome to Mocker</h1>
         </div>
-        <Notify :success="this.success" :message="this.msg" v-if="showNotification"/>
         <div class="login-or-register" v-if="showLoginSignup">
             <button type="button" class="btn btn-primary" @click="goToLogin">Login</button>
             <button type="button" class="btn btn-success" @click="goToSignup">Signup</button>
@@ -13,16 +26,11 @@
 
 
 <script>
-import Notify from '../common/Notify.vue';
 
 import { validateRefreshTokenAPI, getUserDetailsAPI, getAccessTokenAPI } from '../API';
 export default {
-    components: {
-        Notify
-    },
     data() {
         return {
-            success: false,
             msg: '',
             loginPage: '/login',
             signUpPage: '/signup',
@@ -41,8 +49,13 @@ export default {
             if (response?.error){
                 // show error dialog box
                 this.showNotification = true
-                this.success = false
-                this.msg = response.errMsg
+                if (response.status === 400 || response.status === 302){
+                    //"no cookie set" or "session expired, please re login"
+                    this.msg = "Please login again"
+                }
+                else if (response.status === 401){
+                    this.msg = 'wrong user'
+                }
                 // show login and signup button
                 this.showLoginSignup = true
             } else {
@@ -51,7 +64,6 @@ export default {
                 // get user details
                 await this.getSetUserDetails()
                 this.showNotification = true
-                this.success = true
                 this.msg = `welcome ${this.user.username}`
                 setTimeout(() => {
                     this.goToProfilePage(this.user.id)
@@ -62,11 +74,20 @@ export default {
             const response = await getAccessTokenAPI()
             if (response?.error){
                 this.showNotification = true
-                this.success = false
-                this.msg = response.errMsg
+                if (response.status === 302){
+                    this.msg = "please login again"
+                }
+                else if (response.status === 401){
+                    this.msg = "wrong user"
+                }
+                else if (response.status === 500){
+                    this.msg = response.errMsg
+                }
+                // show login and signup button
+                this.showLoginSignup = true
             } else {
                 // set in localstorage
-                localStorage.setItem('accessToken', JSON.stringify(response.accesstoken))
+                localStorage.setItem('accessToken', response.accesstoken)
                 // set in store
                 this.$store.commit('setAccessToken', response.accesstoken);
                 return response.accesstoken
@@ -76,8 +97,22 @@ export default {
             const response = await getUserDetailsAPI(this.accessToken)
             if (response?.error){
                 this.showNotification = true
-                this.success = false
-                this.msg = response.errMsg
+                if (response.status === 401){
+                    this.accessToken = await this.getAccessToken()
+                    // refresh the page
+                    this.msg = "reloading page"
+                    location.reload()
+                }
+                else if (response.status === 400){
+                    this.accessToken = await this.getAccessToken()
+                    // refresh the page
+                    this.msg = "no user found"
+                }
+                else if (response.status === 500){
+                    this.accessToken = await this.getAccessToken()
+                    // refresh the page
+                    this.msg = response.errMsg
+                }
             } else {
                 let user = {
                     id: response.user.id,

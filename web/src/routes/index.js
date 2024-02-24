@@ -4,6 +4,7 @@ import Login from '../components/Login.vue'
 import Root from '../components/Root.vue';
 import Signup from '../components/Signup.vue'
 import Profile from '../components/Profile.vue'
+import MockUrl from '../components/MockUrl.vue'
 
 const routes = [
     {
@@ -25,6 +26,11 @@ const routes = [
         name: "Profile",
         path: "/profile/:userid",
         component: Profile
+    },
+    {
+        name: "MockDetails",
+        path: "/profile/:userid/api/:urlid",
+        component: MockUrl
     }
 ];
 

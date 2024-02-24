@@ -30,12 +30,12 @@ export const validateRefreshTokenAPI = async () => {
     //     message: "error",
     //     error: error.message
     try {
-        const endpoint = baseUrl + '/auth/validate/token'
+        const endpoint = baseUrl + '/auth/validate/refresh/token'
         const response = await axios.get(endpoint, {withCredentials: true})
         return response.data
     } catch (error) {
         const status = error.response.status
-        const errMsg = error.response.data.error
+        const errMsg = error.response.data.message
         return {error, status, errMsg}
     }    
 }
@@ -63,7 +63,7 @@ export const logInUserAPI = async (username, password, accesstoken=null) => {
         return response.data
     } catch (error) {
         const status = error.response.status
-        const errMsg = error.response.data.error
+        const errMsg = error.response.data.message
         return {error, status, errMsg}
     }
 }
@@ -79,7 +79,7 @@ export const registerUserAPI = async (username, email, password) => {
         return response.data
     } catch (error) {
         const status = error.response.status
-        const errMsg = error.response.data.error
+        const errMsg = error.response.data.message
         return {error, status, errMsg}
     }
 }
@@ -102,7 +102,7 @@ export const getUserDetailsAPI = async (accesstoken) => {
         return response.data
     } catch (error) {
         const status = error.response.status
-        const errMsg = error.response.data.error
+        const errMsg = error.response.data.message
         return {error, status, errMsg}
     }
 }
@@ -128,7 +128,7 @@ export const getAccessTokenAPI = async () => {
         return response.data
     } catch (error) {
         const status = error.response.status
-        const errMsg = error.response.data.error
+        const errMsg = error.response.data.message
         return {error, status, errMsg}
     }
 }
@@ -150,6 +150,22 @@ export const getAllUrlsAPI = async (userid, accesstoken) => {
     } catch (error) {
         const status = error.response.status
         const errMsg = error.response.data.error
+        return {error, status, errMsg}
+    }
+}
+
+export const validateAccessTokenAPI = async (accesstoken) => {
+    try {
+        const endpoint = baseUrl + '/auth/validate/access/token'
+        const options = {
+            withCredentials: true,
+            headers: {'Content-Type': 'application/json', 'Authorization': accesstoken}
+        }
+        const response = await axios.get(endpoint, options)
+        return response.data
+    } catch (error) {
+        const status = error.response.status
+        const errMsg = "Invalid Token"
         return {error, status, errMsg}
     }
 }
@@ -179,6 +195,23 @@ export const registerUrlAPI = async (userid, accesstoken, payload) => {
         } else {
             errMsg = error.response.data.error
         }
+        return {error, status, errMsg}
+    }
+}
+
+export const getUrlAPI = async (userid, urlid, accesstoken) => {
+    // get details of a url
+    const endpoint = baseUrl + `/urls/${userid}/get/${urlid}`
+    const options = {
+        withCredentials: true,
+        headers: {'Content-Type': 'application/json', 'Authorization': accesstoken}
+    }
+    try {
+        const response = await axios.get(endpoint, options)
+        return response.data
+    } catch (error) {
+        const status = error.response.status
+        const errMsg = error.response.data.error
         return {error, status, errMsg}
     }
 }

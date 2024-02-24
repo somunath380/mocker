@@ -16,7 +16,7 @@ exports.createUrl = async (req, res, next) => {
         try {
             await newUrl.validate()
         } catch (err) {
-            return res.status(400).json({success: false, error: err.message});
+            return res.status(400).json({success: false, message: err.message});
         }
         // check if that url is already created or not
         // by getting all the urls of that particular user
@@ -96,12 +96,12 @@ exports.getUrl = async (req, res, next) => {
         if (url) {
             return res.status(200).json({success: true, url})
         } else {
-            return res.status(404).json({ message: 'url not found' });
+            return res.status(404).json({ success: false, message: 'url not found' });
         }
     } catch (err) {
         return res.status(403).json({
             success: false,
-            error: err.message
+            message: err.message
         })
     }
 }
@@ -112,7 +112,7 @@ exports.updateUrl = async (req, res, next) => {
         const urlId = req.params.urlid;
         const url = await UrlModel.findById(urlId)
         if (!url){
-            return res.status(404).json({ message: 'url not found' });
+            return res.status(404).json({ success: false, message: 'url not found' });
         }
         for (const [key, value] of Object.entries(reqBody)) {
             url[key] = reqBody[key]
@@ -123,7 +123,7 @@ exports.updateUrl = async (req, res, next) => {
     } catch (err) {
         return res.status(403).json({
             success: false,
-            error: err.message
+            message: err.message
         })
     }
 }
@@ -133,14 +133,14 @@ exports.deleteUrl = async (req, res, next) => {
         const urlId = req.params.urlid;
         const url = await UrlModel.findById(urlId)
         if (!url) {
-            return res.status(404).json({ message: 'url not found' });
+            return res.status(404).json({ success: false, message: 'url not found' });
         }
         await url.deleteOne()
         return res.status(200).json({success: true, message: "Url deleted", url});
     } catch (error) {
         return res.status(403).json({
             success: false,
-            error: err.message
+            message: err.message
         })
     }
 }
@@ -169,7 +169,7 @@ exports.uploadFile = async (req, res, next) => {
         try {
             await newUrl.validate()
         } catch (error) {
-            return res.status(400).json({success: false, error});
+            return res.status(400).json({success: false, message: error.message});
         }
         const url = await UrlModel.findOne({
             $and: [
@@ -220,7 +220,7 @@ exports.uploadFile = async (req, res, next) => {
     } catch (error) {
         return res.status(403).json({
             success: false,
-            error: err.message
+            message: err.message
         })
     }
 }

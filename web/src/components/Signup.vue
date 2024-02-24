@@ -1,7 +1,6 @@
 <template>
     <h2>Sign up to use Mocker</h2>
     <form @submit.prevent="signUpUser">
-        <Notify :success="this.success" :message="this.msg" v-if="showNotification"/>
         <div class="mb-3">
             <label class="form-label">Username</label>
             <input type="text" v-model="username" required class="form-control" value="">
@@ -21,18 +20,13 @@
 <script>
 
 import { registerUserAPI } from '../API';
-import Notify from '../common/Notify.vue';
 
     export default {
-        components: {
-            Notify
-        },
         data() {
             return {
                 username: null,
                 email: null,
                 password: null,
-                success: false, // this is for sending error message to Notify
                 msg: '',
                 loginPage: '/login',
                 showNotification: false
@@ -44,16 +38,22 @@ import Notify from '../common/Notify.vue';
                     if (response?.error) {
                     // show error dialog box
                         this.showNotification = true
-                        this.success = false
-                        this.msg = response.errMsg
+                        if (response.status === 401){
+                            this.msg = "user already exists, please login"
+                        }
+                        else if (response.status === 501){
+                            this.msg = response.errMsg
+                        }
+                        else if (response.status === 500){
+                            this.msg = response.errMsg
+                        }
                 } else {
                     // go to the dashboard
                     this.showNotification = true
-                    this.success = true
                     this.msg = 'user registered successfully'
                     if (response?.reLogin) {
                         // set in localstorage
-                        localStorage.setItem('accessToken', JSON.stringify(response.user.accesstoken))
+                        localStorage.setItem('accessToken', response.user.accesstoken)
                         // set in store
                         this.$store.commit('setAccessToken', response.user.accesstoken);
                         this.goToLogin()

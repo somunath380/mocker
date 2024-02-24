@@ -4,6 +4,16 @@ import './style.css'
 import App from './App.vue'
 import router from './routes'
 import { createStore} from 'vuex'
+import 'vuetify/styles'
+import { createVuetify } from 'vuetify'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
+import PrimeVue from 'primevue/config';
+
+const vuetify = createVuetify({
+  components,
+  directives,
+})
 
 const store = createStore({
     state() {
@@ -22,4 +32,4 @@ const store = createStore({
     }
 })
 
-createApp(App).use(router).use(store).mount('#app')
+createApp(App).use(router).use(store).use(vuetify).use(PrimeVue).mount('#app')
