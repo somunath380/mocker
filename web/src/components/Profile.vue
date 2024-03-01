@@ -13,7 +13,25 @@
             </template>
         </v-snackbar>
     </div>
-    <h1>Welcome {{ user.username }}</h1>
+    <div class="welcome">
+        <h1>Welcome {{ user.username }}</h1>
+    </div>
+    <div class="create-url">
+        <div class="show-text">
+            <h3>Create Your Own Normal JSON mock url</h3>
+        </div>
+        <div class="top-right">
+            <url-upload></url-upload>
+        </div>
+    </div>
+    <div class="create-url">
+        <div class="show-text">
+            <h3>Upload a PDF file or python/JS script to get mocked response</h3>
+        </div>
+        <div class="top-right">
+            <file-upload></file-upload>
+        </div>
+    </div>
     <div class="whole-page">
         <div class="all-urls" v-if="showUrls">
             <h2>All Mocked Urls by you</h2>
@@ -44,95 +62,18 @@
         </div>
     </div>
     <h2 v-if="noUrls">You Have Not Created Any Mocks Till Now</h2>
-    <div class="create-url">
-        <h1>Add below details to create a Mock Url</h1>
-        <form>
-            <div className="form-group" class="form-container">
-                <div class="url-container">
-                    <label htmlFor="url">HTTP url</label>
-                    <small>The API endpoint that you will call</small>
-                    <span class="required">Required</span>
-                    <input className="form-control" class="mock-url" name="url" id="url" placeholder='enter/url/endpoint' v-model="mockUrl" type="url"/>
-                </div>
-            </div>
-            <div className="form-group" class="form-container">
-                <div class="url-container">
-                    <label htmlFor="method">HTTP method</label>
-                    <small>The API method</small>
-                    <span class="optional">Optional</span>
-                    <v-select :items="['GET', 'POST']" v-model="mockMethod" density="compact">
-                    </v-select>
-                </div>
-            </div>
-            <div className="form-group" class="form-container">
-                <div class="json-container">
-                    <label htmlFor="body">HTTP payload</label>
-                    <small>The payload of the request required if the HTTP method is a POST type</small>
-                    <span class="optional">Optional</span>
-                    <v-col cols="14">
-                        <v-textarea 
-                            v-model="mockPayload"
-                            density="comfortable"
-                            rows="10"
-                            :placeholder="jsonPayloadPlaceHolder"
-                        >
-                        </v-textarea>
-                    </v-col>
-                </div>
-            </div>
-            <div className="form-group" class="form-container">
-                <div class="json-container">
-                    <label htmlFor="response">HTTP response body</label>
-                    <small>The response body that you will get</small>
-                    <span class="required">Required</span>
-                    <v-col cols="14">
-                        <v-textarea 
-                            v-model="mockResponse"
-                            density="comfortable"
-                            rows="10"
-                            :placeholder="jsonResponsePlaceHolder"
-                        >
-                        </v-textarea>
-                    </v-col>
-                </div>
-            </div>
-            <div className="form-group" class="form-container">
-                <div class="json-container">
-                    <label htmlFor="headers">HTTP response headers</label>
-                    <small>The Content-Type header that will be sent with the response.</small>
-                    <span class="optional">Optional</span>
-                    <v-select 
-                        :items="supportedHeadersItems" 
-                        v-model="mockHeaders" 
-                        density="compact" 
-                        >
-                    </v-select>
-                </div>
-            </div>
-            <div className="form-group" class="form-container">
-                <div class="json-container">
-                    <label htmlFor="status">mock HTTP status code</label>
-                    <small>The HTTP Code of the HTTP response you'll receive.</small>
-                    <span class="required">Required</span>
-                    <v-select 
-                        :items="supportedStatusCodes"
-                        v-model="mockStatus" 
-                        density="compact" 
-                        >
-                    </v-select>
-                </div>
-            </div>
-        </form>
-        <button type="submit" class="btn btn-primary add-url" @click="addUrl">Add url</button>
-    </div>
 </template>
 
 <script>
 import { getUserDetailsAPI, getAccessTokenAPI, getAllUrlsAPI, registerUrlAPI, validateRefreshTokenAPI, validateAccessTokenAPI } from '../API';
 
+import FileUpload from './FileUpload.vue';
+import RegisterMock from './RegisterMock.vue';
+
 export default {
     components: {
-
+        'file-upload': FileUpload,
+        'url-upload': RegisterMock,
     },
     data(){
         return {
@@ -161,16 +102,8 @@ export default {
                 "gender": "male",
                 "country": "India"
             },
-            supportedHeadersItems: ['application/json', 'multipart/form-data', 'application/octet-stream', 'application/pdf'],
+            supportedHeadersItems: ['application/json'],
             supportedStatusCodes: [ 200, 201, 400, 401, 403, 404, 500, 501]
-        }
-    },
-    computed: {
-        jsonPayloadPlaceHolder(){
-            return JSON.stringify(this.payloadPlaceHolder, null, 2)
-        },
-        jsonResponsePlaceHolder(){
-            return JSON.stringify(this.responsePlaceHolder, null, 2)
         }
     },
     created() {
@@ -179,63 +112,6 @@ export default {
         this.fetchAllUrls();
     },
     methods: {
-        itemProps (item){
-            return {
-                title: item.name,
-                subtitle: item.desc
-            }
-        },
-        getPayload() {
-            const data = {
-                userid: this.user.id,
-                url: String(this.mockUrl),
-                method: String(this.mockMethod),
-                body: (this.mockPayload === null)? {} : JSON.parse(this.mockPayload),
-                response: this.mockResponse === null? {} : JSON.parse(this.mockResponse),
-                headers: this.mockHeaders === null? {} : JSON.parse(this.mockHeaders),
-                status_code: this.mockStatus === null? 200 : Number(this.mockStatus),
-                user_details: {
-                    id: this.user.id,
-                    username: this.user.username
-                }
-            }
-            if (!this.mockUrl || !this.mockMethod || !this.mockResponse) {
-                return {success: false}
-            } else {
-                return {success: true, data}
-            }
-        },
-        async addUrl() {
-            // transform all data to correct format
-            const data = this.getPayload()
-            if (!data.success) {
-                this.showNotification = true
-                this.success = false
-                this.msg = 'Incorrect details passed!'
-            }
-            // make api call
-            const response = await registerUrlAPI(this.user.id, this.accessToken, data.data)
-            if (response?.error){
-                // this.showNotification = true
-                this.success = false
-                this.msg = response.errMsg
-                alert(`${this.msg}`)
-            } else {
-                this.showNotification = true
-                this.success = true
-                this.msg = response.message
-                await this.fetchAllUrls()
-                this.resetValues()
-            }
-        },
-        resetValues() {
-            this.mockUrl = null,
-            this.mockMethod = 'GET',
-            this.mockPayload = null,
-            this.mockResponse = null,
-            this.mockHeaders = "application/json",
-            this.mockStatus = 200
-        },
         async fetchAllUrls() {
             // check userid and accesstoken
             if (this.accessToken && this.user) {
@@ -361,7 +237,6 @@ export default {
                 this.showLoginSignup = true
                 this.$router.push("/login")
             } else {
-
                 this.getAccessToken();
             }
         }
@@ -371,72 +246,13 @@ export default {
 
 <style scoped>
 
-/* common */
-
 .create-url{
-    margin-top: 5%;
-    padding-top: 3%;
-}
-.form-container{
-    margin-top: 10px;
+    display: flex;
+    justify-content:space-around;
+    align-items:center;
+    height: 50px;
+    margin-top: 15px;
     margin-bottom: 10px;
-    padding-top: 10px;
-    padding-bottom: 10px;
-}
-.url-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    /* border-style:solid;
-    border-radius: 20px;
-    border-width: 0.11px; */
-    padding-bottom: 20px;
-}
-small {
-    color: #0e8ae9;
-    line-height: 18px;
-}
-.required {
-    font-size: 12px;
-    float: right;
-    color: red;
-    /* text-align: right; */
-}
-.optional {
-    font-size: 12px;
-    float: right;
-    color: rgb(102, 92, 86);
-}
-.add-url{
-    /* border-style: solid; */
-    border-color: black;
-    border-width: 2px;
-    background-color: #2374ab;
-    color: #fff;
-}
-
-/* for each */
-
-.json-container{
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-.mock-url {
-    border-style: solid;
-    border-color: #adaca9;
-    border-radius: 4px;
-    width: 500px;
-    height: 40px;
-    text-align: center;
-}
-
-.mock-payload{
-    border-style: solid;
-    border-color: #adaca9;
-    border-radius: 4px;
-    width: 400px;
-    height: 320px;
 }
 
 .one-url {

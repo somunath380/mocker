@@ -11,6 +11,7 @@ const availableExtensions = [".py", ".js"]
 exports.createUrl = async (req, res, next) => {
     try {
         const reqBody = req.body;
+        reqBody.headers = JSON.parse(reqBody.headers)
         const userId = req.params.userid;
         const newUrl = new UrlModel(reqBody);
         try {
@@ -145,16 +146,20 @@ exports.deleteUrl = async (req, res, next) => {
     }
 }
 
+const uploadPath = path.join(path.join(path.join(__dirname, '..'), '..'), 'uploads')
 
 exports.uploadFile = async (req, res, next) => {
     try {
         const userId = req.params.userid;
+        if (!req.files || Object.keys(req.files).length === 0) {
+            return res.status(400).send('No files were uploaded.');
+        }
+        req.uploadPath = uploadPath + '/' + req.files.file.name
         const filepath = req.uploadPath
         let reqBody = req.body
         reqBody.filepath = filepath
         const canExe = reqBody?.execute_file
         if (!canExe) {
-            // const fileName = path.basename(filepath);
             const ext = path.extname(filepath)
             if (availableExtensions.includes(ext)){
                 reqBody.execute_file = true
@@ -218,6 +223,7 @@ exports.uploadFile = async (req, res, next) => {
             return res.status(200).json({success: true, message: "url added", newUrl});
         }
     } catch (error) {
+        console.log("Error occured: ", error);
         return res.status(403).json({
             success: false,
             message: err.message

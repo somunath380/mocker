@@ -1,7 +1,5 @@
 require('dotenv').config();
 const config = require("../config")
-// const readline = require('readline');
-// const crypto = require('crypto');
 
 const port = config?.server?.port || 3000
 

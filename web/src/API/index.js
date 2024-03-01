@@ -215,3 +215,24 @@ export const getUrlAPI = async (userid, urlid, accesstoken) => {
         return {error, status, errMsg}
     }
 }
+
+export const uploadFileAPI = async (userid, accesstoken, payload) => {
+    const endpoint = baseUrl + `/urls/${userid}/upload/file`
+    const options = {
+        withCredentials: true,
+        headers: {'Content-Type': 'multipart/form-data', 'Authorization': accesstoken}
+    }
+    try {
+        const response = await axios.post(endpoint, payload, options)
+        return response.data
+    } catch (error) {
+        const status = error.response.status
+        let errMsg
+        if (error.response.data?.message){
+            errMsg = error.response.data?.message
+        } else {
+            errMsg = error.response.data.error
+        }
+        return {error, status, errMsg}
+    }
+}
