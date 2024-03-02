@@ -16,20 +16,22 @@
     <div class="welcome">
         <h1>Welcome {{ user.username }}</h1>
     </div>
-    <div class="create-url">
-        <div class="show-text">
-            <h3>Create Your Own Normal JSON mock url</h3>
+    <div class="buttons">
+        <div class="create-url">
+            <div class="show-text">
+                <h3>Create Your Own Normal JSON mock url</h3>
+            </div>
+            <div class="top-right">
+                <url-upload></url-upload>
+            </div>
         </div>
-        <div class="top-right">
-            <url-upload></url-upload>
-        </div>
-    </div>
-    <div class="create-url">
-        <div class="show-text">
-            <h3>Upload a PDF file or python/JS script to get mocked response</h3>
-        </div>
-        <div class="top-right">
-            <file-upload></file-upload>
+        <div class="create-url">
+            <div class="show-text">
+                <h3>Upload a PDF file or python/JS script to get mocked response</h3>
+            </div>
+            <div class="top-right">
+                <file-upload></file-upload>
+            </div>
         </div>
     </div>
     <div class="whole-page">
@@ -65,7 +67,7 @@
 </template>
 
 <script>
-import { getUserDetailsAPI, getAccessTokenAPI, getAllUrlsAPI, registerUrlAPI, validateRefreshTokenAPI, validateAccessTokenAPI } from '../API';
+import { getUserDetailsAPI, getAccessTokenAPI, getAllUrlsAPI, validateRefreshTokenAPI, validateAccessTokenAPI } from '../API';
 
 import FileUpload from './FileUpload.vue';
 import RegisterMock from './RegisterMock.vue';
@@ -109,11 +111,14 @@ export default {
     created() {
         this.getRefreshToken();
         this.fetchUserDetails(); // this will set the user and accessToken
+    },
+    mounted() {
         this.fetchAllUrls();
     },
     methods: {
         async fetchAllUrls() {
             // check userid and accesstoken
+            // PENDING: store all mocked urls in the browser local storage
             if (this.accessToken && this.user) {
                 const response = await getAllUrlsAPI(this.user.id, this.accessToken)
                 if (response?.error){
@@ -263,6 +268,10 @@ export default {
         box-shadow: 0 0 10px rgb(0, 0, 0);
         cursor: pointer;
     }
+}
+
+.buttons{
+    margin-bottom: 8%;
 }
 
 table {

@@ -27,7 +27,7 @@
 
 <script>
 
-import { logInUserAPI } from '../API';
+import { logInUserAPI, validateAccessTokenAPI, getAccessTokenAPI } from '../API';
 // import Signup from './Signup.vue';
 
     export default {
@@ -45,7 +45,7 @@ import { logInUserAPI } from '../API';
         },
         methods: {
             async logInUser() {
-                this.accessToken = this.$store.state.accessToken || JSON.parse(localStorage.getItem('accessToken'))
+                this.accessToken = await this.getAccessToken()
                 const response = await logInUserAPI(this.username, this.password, this.accessToken)
                     if (response?.error) {
                     // show error dialog box
@@ -79,6 +79,53 @@ import { logInUserAPI } from '../API';
                     this.$store.commit('setUser', user)
                     this.goToProfilePage(user.id)
                 }
+            },
+            async getAccessToken() {
+                // checks accessToken in the browser local storage
+                // if it is found then it makes an API call to check if it is valid or not
+                // if response is true then it sets accessToken in the local storage and in the store
+                // otherwise it makes an api call with the refresh token to get new access token and set it in the local storage and store
+                
+                // checks if the 'accessToken' is present in the local storage
+                const accessToken = localStorage.getItem('accessToken');
+                // if not present
+                if (!accessToken){
+                    // call the API to get new access token and save in the local storage
+                    let newAccessToken = this.getNewAccessToken()
+                    return newAccessToken
+                } else {
+                    // if accessToken is present in the browser local storage
+                    // check if the token is valid or not
+                    const response = await validateAccessTokenAPI(accessToken);
+                    if (response?.error){
+                        // if the access token is invalid then get new access token and save in browser
+                        this.showNotification = true
+                        this.msg = response.errMsg
+                        let newAccessToken = this.getNewAccessToken()
+                        return newAccessToken
+                    } else {
+                        return accessToken
+                    }
+                }
+            },
+            async getNewAccessToken() {
+                // gets new access token and saves it in the browser local storage
+                const response = await getAccessTokenAPI()
+                    if (response?.error){
+                        this.showNotification = true
+                        this.success = false
+                        this.msg = response.errMsg
+                        if (response?.status === 302){
+                            // need to redirect to the login page
+                            // this.$router.push("/login")
+                            this.showNotification = true
+                            this.msg = "something wrong occured while getting token"
+                        }
+                    } else {
+                        // set in localstorage
+                        localStorage.setItem('accessToken', response.accesstoken) // do not save the token as JSON.stringify because the accesstoken is in str format
+                        return response.accesstoken
+                    }
             },
             goToSignup() {
                 this.$router.push(this.signUpPage)

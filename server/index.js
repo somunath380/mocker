@@ -10,7 +10,6 @@ function initServer() {
     })
     process.on("unhandledRejection", err => {
         console.log(`An error occurred: ${err.message}`)
-        process.exit(1)
     })
 }
 

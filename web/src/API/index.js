@@ -236,3 +236,53 @@ export const uploadFileAPI = async (userid, accesstoken, payload) => {
         return {error, status, errMsg}
     }
 }
+
+export const deleteUrlAPI = async (userid, urlid, accesstoken) => {
+    const endpoint = baseUrl + `/urls/${userid}/delete/${urlid}`
+    const options = {
+        withCredentials: true,
+        headers: {'Content-Type': 'application/json', 'Authorization': accesstoken}
+    }
+    try {
+        const response = await axios.delete(endpoint, options)
+        return response.data
+    } catch (error) {
+        const status = error.response.status
+        const errMsg = error.response.data.error
+        return {error, status, errMsg}
+    }
+}
+
+export const updateUrlAPI = async (userid, urlid, accesstoken, payload) => {
+    const endpoint = baseUrl + `/urls/${userid}/update/${urlid}`
+    const options = {
+        withCredentials: true,
+        headers: {'Content-Type': 'application/json', 'Authorization': accesstoken}
+    }
+    try {
+        const response = await axios.put(endpoint, payload, options)
+        return response.data
+    } catch (error) {
+        const status = error.response.status
+        const errMsg = error.response.data.error
+        return {error, status, errMsg}
+    }
+}
+
+export const testMockAPI = async (url, httpMethod, payload) => {
+    const endpoint = domain + `:${port}` + url
+    if (httpMethod === 'GET'){
+        payload = {}
+    }
+    const options = {
+        url: endpoint,
+        method: httpMethod,
+        data: payload,
+    }
+    try {
+        const response = await axios(options);
+        return response.data
+    } catch (error) {
+        return error.response.data
+    }
+}

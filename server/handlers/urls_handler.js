@@ -110,6 +110,7 @@ exports.getUrl = async (req, res, next) => {
 exports.updateUrl = async (req, res, next) => {
     try {
         const reqBody = req.body;
+        reqBody.headers = JSON.parse(reqBody.headers)
         const urlId = req.params.urlid;
         const url = await UrlModel.findById(urlId)
         if (!url){

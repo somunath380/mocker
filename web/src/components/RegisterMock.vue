@@ -106,7 +106,7 @@
                                 density="comfortable"
                                 rows="10"
                                 :placeholder="jsonResponsePlaceHolder"
-                                hint="The payload of the request required if the HTTP method is a POST type"
+                                hint="The response that you will get when you make request to this mock"
                                 >
                                 </v-textarea>
                             </v-col>
@@ -231,9 +231,12 @@ export default {
                 // alert(`${this.msg}`)
                 this.showNotification = true
             } else {
-                this.showNotification = true
-                this.success = true
-                this.msg = response.message
+                this.showNotification = true;
+                this.success = true;
+                this.msg = response.message;
+                this.dialog = false;
+                await this.sleep(2000);
+                this.$router.go();
             }
         },
         getPayload() {
@@ -278,6 +281,7 @@ export default {
                     this.showNotification = true
                     this.msg = response.errMsg
                     let newAccessToken = this.getNewAccessToken()
+                    this.$router.go();
                     return newAccessToken
                 } else {
                     return accessToken
@@ -303,6 +307,9 @@ export default {
                     return response.accesstoken
                 }
         },
+        sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
     },
 }
 

@@ -1,4 +1,18 @@
 <template>
+    <div class="snackbar">
+        <v-snackbar v-model="showNotification" :timeout="2000" color="success" location="top">
+            <span>{{this.msg}}</span>
+            <template v-slot:actions>
+                <v-btn
+                color="white"
+                variant="text"
+                @click="showNotification = false"
+                >
+                Close
+                </v-btn>
+            </template>
+        </v-snackbar>
+    </div>
     <v-row justify="center">
         <v-dialog
             v-model="dialog"
@@ -86,15 +100,17 @@
                                 >
                                 </v-textarea>
                             </v-col>
-                            <v-file-input 
+                            <v-col cols="4">
+                                <v-file-input 
                                 label="Upload a File" 
                                 v-model="file"
                                 accept=".js, .py, .pdf"
                                 :rules="[v => !!v || 'You must select a file']"
                                 show-size
                                 hint="If the file is a executable then add print or log the output to get the API"
-                            >
-                            </v-file-input>
+                                >
+                                </v-file-input>
+                            </v-col>
                         </v-row>
                     </v-container>
                 </v-card-text>
@@ -115,20 +131,6 @@
                             Add Url
                         </v-btn>
                     </v-card-actions>
-                    <v-card v-if="isLoading">
-                        <v-card-text>Uploading and executing file...</v-card-text>
-                        <v-progress-linear indeterminate color="primary"></v-progress-linear>
-                    </v-card>
-                    <v-card v-else-if="isResponse">
-                        <v-card-text>
-                            <h3>Response:</h3>
-                            <pre>{{ response }}</pre>
-                        </v-card-text>
-                    </v-card>
-                    <v-card v-else-if="isError">
-                        <v-card-title color="error">Error:</v-card-title>
-                        <v-card-text>{{ errorMessage }}</v-card-text>
-                    </v-card>
                 </v-card>
         </v-dialog>
     </v-row>
@@ -143,11 +145,13 @@ export default {
             dialog: false,
             mockUrl: null,
             mockMethod: "GET",
+            msg: "",
             supportedStatusCodes: [ 200, 201, 400, 401, 403, 404, 500, 501],
             mockStatus: 200,
             mockResponse: null,
-            supportedHeadersItems: ['multipart/form-data', 'application/octet-stream', 'application/pdf'],
-            mockHeaders: "application/form-data",
+            showNotification: false,
+            supportedHeadersItems: ['application/octet-stream', 'application/pdf', 'application/json'],
+            mockHeaders: "application/pdf",
             mockPayload: null,
             payloadPlaceHolder: {
                 "id": "abc123"
@@ -163,8 +167,6 @@ export default {
             file: null,
             user: JSON.parse(localStorage.getItem('user')),
             accessToken: localStorage.getItem('accessToken'),
-            isLoading: false,
-            isResponse: false,
             isError: false,
             response: null,
             errorMessage: null,
@@ -198,10 +200,14 @@ export default {
                 this.errorMessage = response.errMsg
                 this.isError = true;
             } else {
+                this.showNotification = true;
+                this.success = true;
+                this.msg = response.message;
                 this.response = response.data;
-                this.isResponse = true;
+                this.dialog = false;
+                await this.sleep(2000);
+                this.$router.go();
             }
-            this.isLoading = false;
         },
         async getAccessToken() {
             // checks accessToken in the browser local storage
@@ -250,6 +256,9 @@ export default {
                     return response.accesstoken
                 }
         },
+        sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
     },
     created(){
         this.getAccessToken()
