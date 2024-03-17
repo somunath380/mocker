@@ -44,6 +44,7 @@ exports.loginAuth = (req, res, next) => {
     // check if the access token is expired in the header or not
     const accessToken = req.headers['authorization']
     try {
+        // if there is accesstoken then skip generateTokens
         if (accessToken) {
             jwt.verify(accessToken, jwtSecret, (err, decodedToken) => {
                 if (err) {

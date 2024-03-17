@@ -286,3 +286,29 @@ export const testMockAPI = async (url, httpMethod, payload) => {
         return error.response.data
     }
 }
+
+export const logoutAPI = async (accesstoken, userid) => {
+    const endpoint = baseUrl + '/auth/logout'
+    const options = {
+        withCredentials: true,
+        headers: {'Content-Type': 'application/json', 'Authorization': accesstoken}
+    }
+    let payload = {
+        userid
+    }
+    try {
+        const response = await axios.post(endpoint, payload, options)
+        return response.data
+    } catch (error) {
+        const status = error.response.status
+        const errMsg = error.response.data.error
+        return {error, status, errMsg}
+    }
+}
+
+export const checkCookieAPI = async () => {
+    const endpoint = baseUrl + '/auth/check/refreshtoken'
+    const options = {withCredentials: true}
+    const response = await axios.get(endpoint, options)
+    return response.data?.success || false
+}

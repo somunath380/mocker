@@ -16,10 +16,10 @@ router.post("/login", loginAuth, authHandler.generateTokens, authHandler.userLog
 
 router.post("/logout", loginAuth, authHandler.userLogout)
 
-// check if this api can be used or not
-router.get("/refresh/token", authHandler.getRefreshToken)
-
 // get access token using a valid refresh token
 router.get("/access/token", authHandler.getAccessToken)
+
+// api to check if cookie is set or not
+router.get("/check/refreshtoken", authHandler.checkRefreshToken)
 
 module.exports = router

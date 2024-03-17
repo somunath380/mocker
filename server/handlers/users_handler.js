@@ -55,7 +55,7 @@ exports.createUser = async (req, res, next) => {
                 username: newUser.username,
                 accesstoken: accessToken
             }
-            return res.status(200).json({success: true, user, reLogin: true,});
+            return res.status(200).json({success: true, user, login: newUser.logIn});
         }
     } catch (error) {
         console.log("error occured while creating user: ", error);

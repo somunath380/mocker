@@ -1,141 +1,130 @@
 <template>
-    <h1>{{ 'Login to use Mocker' }}</h1> <br>
-    <div class="snackbar">
-        <v-snackbar v-model="showNotification" :timeout="2000" color="success" location="top">
-            <span>{{this.msg}}</span>
-            <template v-slot:actions>
-                <v-btn color="white" variant="text" @click="showNotification = false">Close</v-btn>
-            </template>
-        </v-snackbar>
-    </div>
-    <form @submit.prevent="logInUser">
-        <div class="mb-3">
-            <label class="form-label">Username</label>
-            <input type="text" v-model="username" required class="form-control" value="">
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Password</label>
-            <input type="password" v-model="password" required class="form-control">
-        </div>
-        <button type="submit" class="btn btn-success">Login</button>
-    </form>
-    <div class="signup" v-if="showSignUpButton">
-        <h2>Would you like to Sign up?</h2>
-        <button type="button" class="btn btn-success" @click="goToSignup">Signup</button>
-    </div>
+    <v-snackbar v-model="error" :color="color" :timeout="timeout" location="top">
+        {{ msg }}
+        <template v-slot:action="{ close }">
+            <v-btn flat color="white" text @click="close">
+                Close
+            </v-btn>
+        </template>
+    </v-snackbar>
+    <v-btn color="secondary" @click="openDialog">
+        Login 🤘
+    </v-btn>
+    <v-row justify="center">
+        <v-dialog v-model="showDialog" max-width="500">
+            <v-card>
+                <v-card-title class="text-h5">Login</v-card-title>
+                <v-card-text>
+                    <v-text-field label="Username" required v-model="username"></v-text-field>
+                    <v-text-field 
+                    label="Password" 
+                    required 
+                    v-model="password"
+                    :type="'password'"
+                    ></v-text-field>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="red" text @click="closeDialog">Cancel</v-btn>
+                    <v-btn color="green" text @click="logInUser">Login</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+    </v-row>
 </template>
 
 <script>
 
-import { logInUserAPI, validateAccessTokenAPI, getAccessTokenAPI } from '../API';
-// import Signup from './Signup.vue';
-
+import { logInUserAPI} from '../API';
+import { getAccessToken } from '../common/token'
+import Signup from './Signup.vue';
     export default {
+        components: {
+            'signup': Signup
+        },
+        props: {
+            generateRefreshToken: {
+                type: Boolean,
+                default: false
+            },
+        },
         data() {
             return {
                 username: null,
                 password: null,
                 msg: '',
-                signUpPage: '/signup',
+                error: false,
                 profilePage: '/profile',
-                showNotification: false,
-                showSignUpButton: false,
-                accessToken: null
+                accessToken: null,
+                color: 'error',
+                timeout: 2000,
+                showDialog: false,
             };
         },
         methods: {
+            openDialog() {
+                this.showDialog = true
+            },
+            closeDialog() {
+                this.showDialog = false
+            },
             async logInUser() {
-                this.accessToken = await this.getAccessToken()
-                const response = await logInUserAPI(this.username, this.password, this.accessToken)
-                    if (response?.error) {
-                    // show error dialog box
-                    this.showNotification = true
-                    if (response?.status === 405){
-                        // if no user is found then show signup page button
-                        this.msg = "no user found"
-                        this.showSignUpButton = true
-                    }
-                    else if (response.status === 403){
-                        this.msg = "not authorized"
-                    }
-                    else if (response.status === 400){
-                        this.msg = "incorrect username or password"
-                    }
-                    else if (response.status === 500){
-                        this.msg = response.errMsg
-                    }
-                } else {
-                    // go to the dashboard
-                    this.showNotification = true
-                    this.msg = 'login successful'
-                    let user = {
-                        id: response.user.id,
-                        username: response.user.username,
-                        login: true
-                    }
-                    // set user in local storage
-                    localStorage.setItem('user', JSON.stringify(user))
-                    // set user in store
-                    this.$store.commit('setUser', user)
-                    this.goToProfilePage(user.id)
-                }
-            },
-            async getAccessToken() {
-                // checks accessToken in the browser local storage
-                // if it is found then it makes an API call to check if it is valid or not
-                // if response is true then it sets accessToken in the local storage and in the store
-                // otherwise it makes an api call with the refresh token to get new access token and set it in the local storage and store
-                
-                // checks if the 'accessToken' is present in the local storage
-                const accessToken = localStorage.getItem('accessToken');
-                // if not present
-                if (!accessToken){
-                    // call the API to get new access token and save in the local storage
-                    let newAccessToken = this.getNewAccessToken()
-                    return newAccessToken
-                } else {
-                    // if accessToken is present in the browser local storage
-                    // check if the token is valid or not
-                    const response = await validateAccessTokenAPI(accessToken);
-                    if (response?.error){
-                        // if the access token is invalid then get new access token and save in browser
-                        this.showNotification = true
-                        this.msg = response.errMsg
-                        let newAccessToken = this.getNewAccessToken()
-                        return newAccessToken
+                try {
+                    let accessToken
+                    if (this.generateRefreshToken) {
+                        // means login user without access token
+                        accessToken = null
                     } else {
-                        return accessToken
+                        accessToken = await getAccessToken()
                     }
-                }
-            },
-            async getNewAccessToken() {
-                // gets new access token and saves it in the browser local storage
-                const response = await getAccessTokenAPI()
-                    if (response?.error){
-                        this.showNotification = true
-                        this.success = false
-                        this.msg = response.errMsg
-                        if (response?.status === 302){
-                            // need to redirect to the login page
-                            // this.$router.push("/login")
-                            this.showNotification = true
-                            this.msg = "something wrong occured while getting token"
+                    const response = await logInUserAPI(this.username, this.password, accessToken)
+                    if (response?.error) {
+                        // show error dialog box
+                        this.error = true
+                        this.color = 'error'
+                        if (response?.status === 405){
+                            this.msg = "Can not find your details..."
+                        }
+                        else if (response.status === 403){
+                            this.msg = "not authorized"
+                        }
+                        else if (response.status === 400){
+                            this.msg = "incorrect username or password"
+                        }
+                        else if (response.status === 500){
+                            this.msg = response.errMsg
                         }
                     } else {
-                        // set in localstorage
-                        localStorage.setItem('accessToken', response.accesstoken) // do not save the token as JSON.stringify because the accesstoken is in str format
-                        return response.accesstoken
+                        // go to the dashboard
+                        this.error = true
+                        this.color = 'success'
+                        this.msg = 'login successful'
+                        this.closeDialog()
+                        let user = {
+                            id: response.user.id,
+                            username: response.user.username,
+                            login: true
+                        }
+                        // set user in local storage
+                        localStorage.setItem('user', JSON.stringify(user))
+                        // set accesstoken in local storage
+                        localStorage.setItem('accessToken', response.user.accesstoken)
+                        this.goToProfilePage(user.id)
                     }
-            },
-            goToSignup() {
-                this.$router.push(this.signUpPage)
+                    this.closeDialog()
+                } catch (err) {
+                    this.error = true
+                    this.color = 'error'
+                    this.msg = err.message
+                    console.error('error occured at logInUser: ', err)
+                }
             },
             goToProfilePage(id) {
                 setTimeout(() => {
                     this.$router.push({name: 'Profile', params: { userid: id }});
                 }, 1500);
             },
-        }
+        },
     };
 
 </script>

@@ -7,12 +7,12 @@ const jwt = require("jsonwebtoken")
 const jwtSecret = config.secret
 
 exports.userLogin = async (req, res, next) => {
+    // this will save login as true of the user, it will also generate new refreshtoken after checking if there is any refreshtoken or not
     console.log("userLogin api is called...");
     try {
-        // check then bearer auth token
+        // check the bearer auth token
         const body = req.body
         const userId = body.userid
-        const username = body.username
         const reqPassword = body.password
         const user = await UserModel.findById(userId)
         if (!user){
@@ -26,14 +26,46 @@ exports.userLogin = async (req, res, next) => {
             if (isAuthentic){
                 user.logIn = true
                 await user.save()
+                let refreshToken
+                // check if any refreshtoken is present for the user
+                const tokenObj = await RefreshTokenModel.findOne({userId: user._id}, {token: 1,  _id: 0})
+                if (!tokenObj){
+                    // generate new access token and refresh token
+                    refreshToken = await generateRefreshToken(user._id)
+                    const newRefreshToken = RefreshTokenModel({
+                        token: refreshToken,
+                        userId: user._id,
+                        expiresAt: new Date(Date.now() + config.maxRefreshTokenTTL * 1000)
+                    })
+                    await newRefreshToken.save();
+                    // set refresh token in cookie
+                    res.cookie(
+                        "refreshToken",
+                        refreshToken,
+                        {
+                            httpOnly: true, 
+                            maxAge: config.maxRefreshTokenTTL * 1000, 
+                            sameSite: 'None',
+                            secure: true,
+                            // domain: 'http://127.0.0.1:5173',
+                            // path: '/'
+                        }
+                    )
+                } else {
+                    refreshToken = tokenObj.token
+                }
+                // generate access token
+                const accessToken = await generateAccessToken({"id": user._id, "role": user.role})
+                const userResponse = {
+                    id: user._id,
+                    username: user.username,
+                    accesstoken: accessToken
+                }
                 return res.status(200).json({
-                    success: true,
-                    "user": {
-                        id: user._id,
-                        "username": user.username,
-                        "login": user.logIn
-                    }
-                })
+                    success: true, 
+                    'user': userResponse, 
+                    'login': user.logIn
+                });
             } else {
                 return res.status(403).json({
                     success: false,
@@ -54,7 +86,6 @@ exports.userLogout = async (req, res, next) => {
     try {
         const body = req.body
         const userId = body.userid
-        const username = body.username
         const user = await UserModel.findById(userId)
         if (!user){
             return res.status(401).json({
@@ -62,6 +93,14 @@ exports.userLogout = async (req, res, next) => {
                 message: "user not found"
             })
         } else {
+            // delete the refreshtoken from the db
+            // const storedRefreshToken = await RefreshTokenModel.deleteMany({userId})
+            // if (!storedRefreshToken.acknowledged){
+            //     return res.status(401).json({
+            //         success: false,
+            //         message: "no refresh token found"
+            //     })
+            // }
             user.logIn = false
             await user.save()
             return res.status(200).json({
@@ -69,69 +108,6 @@ exports.userLogout = async (req, res, next) => {
                 message: "Logged out successfully"
             })
         }
-    } catch (error) {
-        return res.status(401).json({
-            success: false,
-            message: error.message
-        })
-    }
-}
-
-exports.getRefreshToken = async (req, res, next) => {
-    console.log("getRefreshToken api is called...");
-    try {
-        // get refresh token from cookie
-        let refreshToken = req.cookies.refreshToken
-        if (!refreshToken) {
-            return res.status(401).json({
-                success: false,
-                message: "provide refresh token"
-            })
-        }
-        // verify refresh token from db
-        const storedRefreshToken = await RefreshTokenModel.findOne({ token: refreshToken });
-        if (!storedRefreshToken || new Date(storedRefreshToken.expiresAt) < new Date()) {
-            // If the refresh token is not valid or has expired, send Unauthorized status
-            return res.status(401).json({
-                success: false,
-                message: "user session expired, please re-login"
-            })
-        }
-        // check the user id is same or not
-        const dbUserId = storedRefreshToken.userId.toString()
-        // here take the user id from the decrypted jwt token and compare the dbUserId
-        const decodedToken = await jwt.verify(refreshToken, jwtSecret)
-        if (decodedToken?.id && dbUserId !== decodedToken.id) {
-            return res.status(401).json({
-                success: false,
-                message: "Invalid token passed!"
-            })
-        }
-        // create new access token and refresh token
-        refreshToken = await generateRefreshToken(dbUserId)
-        const newRefreshToken = RefreshTokenModel({
-            token: refreshToken,
-            userId: dbUserId,
-            expiresAt: new Date(Date.now() + config.maxRefreshTokenTTL * 1000)
-        })
-        await newRefreshToken.save();
-        //delete old refresh token
-        await storedRefreshToken.deleteOne()
-        // generate access token
-        const user = await UserModel.findById(dbUserId)
-        const accessToken = await generateAccessToken({"id": dbUserId, "role": user.role})
-        // set refresh token in cookie
-        res.cookie(
-            "refreshToken",
-            refreshToken,
-            {
-                httpOnly: true, 
-                maxAge: config.maxRefreshTokenTTL * 1000, 
-                sameSite: 'lax',
-                secure: true, // for https
-            }
-        )
-        return res.status(200).json({success: true, accessToken});
     } catch (error) {
         return res.status(401).json({
             success: false,
@@ -167,14 +143,21 @@ exports.generateTokens = async (req, res, next) => {
             }
             user.logIn = true
             await user.save()
-            // generate new access token and refresh token
-            const refreshToken = await generateRefreshToken(user._id)
-            const newRefreshToken = RefreshTokenModel({
-                token: refreshToken,
-                userId: user._id,
-                expiresAt: new Date(Date.now() + config.maxRefreshTokenTTL * 1000)
-            })
-            await newRefreshToken.save();
+            let refreshToken;
+            // check if refreshToken is already generated for user
+            const tokenObj = await RefreshTokenModel.findOne({userId: user._id}, {token: 1,  _id: 0})
+            if (!tokenObj){
+                // generate new access token and refresh token
+                refreshToken = await generateRefreshToken(user._id)
+                const newRefreshToken = RefreshTokenModel({
+                    token: refreshToken,
+                    userId: user._id,
+                    expiresAt: new Date(Date.now() + config.maxRefreshTokenTTL * 1000)
+                })
+                await newRefreshToken.save();
+            } else {
+                refreshToken = tokenObj.token
+            }
             // generate access token
             const accessToken = await generateAccessToken({"id": user._id, "role": user.role})
             // set refresh token in cookie
@@ -195,10 +178,11 @@ exports.generateTokens = async (req, res, next) => {
                 username: user.username,
                 accesstoken: accessToken
             }
-            const reLogin = user.logIn? false : true
-            return res.status(200).json({success: true, user: userResponse, reLogin});
-            // using return here so the next handler will not be called
-            // next("route")
+            return res.status(200).json({
+                success: true, 
+                'user': userResponse, 
+                'login': user.logIn
+            });
         }
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message});
@@ -258,7 +242,7 @@ exports.validateRefreshToken = async (req, res, next) => {
             })
         }
         const dbUserId = storedRefreshToken.userId.toString()
-        // here take the user id from the decrypted jwt token and compare the dbUserId
+        // take the user id from the decrypted jwt token and compare the dbUserId
         const decodedToken = await jwt.verify(refreshToken, jwtSecret)
         if (decodedToken?.id && dbUserId !== decodedToken.id) {
             return res.status(401).json({
@@ -322,5 +306,19 @@ exports.getAccessToken = async (req, res, next) => {
             message: "error",
             message: error.message
         })
+    }
+}
+
+
+exports.checkRefreshToken = async (req, res, next) => {
+    console.log("checkRefreshToken api is called...");
+    try {
+        let refreshToken = req.cookies.refreshToken
+        if (!refreshToken) {
+            return res.status(200).json({success: false});
+        }
+        return res.status(200).json({success: true});
+    } catch (error) {
+        throw new Error(`error occured at checkRefreshToken: ${error}`)
     }
 }

@@ -8,6 +8,10 @@ const uploadPath = config.uploadPath
 checkOrCreateFolder()
 //connect to database
 require("./models/index")
+// connect to redis
+require('./redis')
+// start the cron
+require('./crons')
 // start the server
 require("./server")
 

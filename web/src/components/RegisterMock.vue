@@ -138,7 +138,7 @@
 
 <script>
 import { registerUrlAPI, getAccessTokenAPI, validateAccessTokenAPI, getUserDetailsAPI } from '../API';
-
+import { getAccessToken, validateRefreshToken } from '../common/token'
 export default {
     data() {
         return {
@@ -149,8 +149,8 @@ export default {
             mockResponse: null,
             mockHeaders: "application/json",
             mockStatus: 200,
-            accessToken: localStorage.getItem('accessToken'),
-            user: null,
+            accessToken: null,
+            user: JSON.parse(localStorage.getItem('user')),
             success: false,
             msg: '',
             showNotification: false,
@@ -180,42 +180,9 @@ export default {
             return JSON.stringify(this.responsePlaceHolder, null, 2)
         }
     },
-    created(){
-        this.getAccessToken();
-        this.fetchUserDetails();
-    },
     methods: {
-        async fetchUserDetails() {
-            const storedUser = localStorage.getItem('user');
-            if (storedUser) {
-                this.user = JSON.parse(storedUser)
-            } else {
-                await this.getSetUserDetails()
-            }
-        },
-        async getSetUserDetails() {
-            let token = await this.getAccessToken()
-            const response = await getUserDetailsAPI(token)
-            if (response?.error){
-                this.showNotification = true
-                this.success = false
-                this.msg = response.errMsg
-            } else {
-                let user = {
-                    id: response.user.id,
-                    username: response.user.username,
-                    login: response.user.login
-                }
-                this.user = user
-                // storing in local storage
-                localStorage.setItem('user', JSON.stringify(user))
-                // storing in store
-                this.$store.commit('setUser', user);
-            }
-        },
         async addUrl() {
             // transform all data to correct format
-            this.accessToken = await this.getAccessToken()
             const data = this.getPayload()
             if (!data.success) {
                 this.showNotification = true
@@ -223,12 +190,11 @@ export default {
                 this.msg = 'Incorrect details passed!'
             }
             // make api call
+            this.accessToken = await this.fetchAccessToken()
             const response = await registerUrlAPI(this.user.id, this.accessToken, data.data)
             if (response?.error){
-                // this.showNotification = true
                 this.success = false
                 this.msg = response.errMsg
-                // alert(`${this.msg}`)
                 this.showNotification = true
             } else {
                 this.showNotification = true;
@@ -237,6 +203,30 @@ export default {
                 this.dialog = false;
                 await this.sleep(2000);
                 this.$router.go();
+            }
+        },
+        async fetchAccessToken() {
+            try {
+                let token = await getAccessToken()
+                this.error = true
+                this.color = 'error'
+                if (token == "relogin") {
+                    this.msg = 'please re-login to your account'
+                }
+                if (token == "Unauthorized user") {
+                    this.msg = 'Sorry you are not authorized'
+                }
+                if (token == "error") {
+                    this.msg = 'token expired'
+                }
+                this.error = false
+                this.color = 'success'
+                return token
+            } catch (err) {
+                this.error = true
+                this.color = 'error'
+                this.msg = 'token expired'
+                console.error('some error occured on fetchAccessToken: ', err);
             }
         },
         getPayload() {
@@ -258,54 +248,6 @@ export default {
             } else {
                 return {success: true, data}
             }
-        },
-        async getAccessToken() {
-            // checks accessToken in the browser local storage
-            // if it is found then it makes an API call to check if it is valid or not
-            // if response is true then it sets accessToken in the local storage and in the store
-            // otherwise it makes an api call with the refresh token to get new access token and set it in the local storage and store
-            
-            // checks if the 'accessToken' is present in the local storage
-            const accessToken = localStorage.getItem('accessToken');
-            // if not present
-            if (!accessToken){
-                // call the API to get new access token and save in the local storage
-                let newAccessToken = this.getNewAccessToken()
-                return newAccessToken
-            } else {
-                // if accessToken is present in the browser local storage
-                // check if the token is valid or not
-                const response = await validateAccessTokenAPI(accessToken);
-                if (response?.error){
-                    // if the access token is invalid then get new access token and save in browser
-                    this.showNotification = true
-                    this.msg = response.errMsg
-                    let newAccessToken = this.getNewAccessToken()
-                    this.$router.go();
-                    return newAccessToken
-                } else {
-                    return accessToken
-                }
-            }
-        },
-        async getNewAccessToken() {
-            // gets new access token and saves it in the browser local storage
-            const response = await getAccessTokenAPI()
-                if (response?.error){
-                    this.showNotification = true
-                    this.success = false
-                    this.msg = response.errMsg
-                    if (response?.status === 302){
-                        // need to redirect to the login page
-                        // this.$router.push("/login")
-                        this.showNotification = true
-                        this.msg = "something wrong occured while getting token"
-                    }
-                } else {
-                    // set in localstorage
-                    localStorage.setItem('accessToken', response.accesstoken) // do not save the token as JSON.stringify because the accesstoken is in str format
-                    return response.accesstoken
-                }
         },
         sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));

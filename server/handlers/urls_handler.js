@@ -220,6 +220,7 @@ exports.uploadFile = async (req, res, next) => {
                 }
             }
         } else {
+            fs.writeFileSync(reqBody.filepath, req.files.file.data)
             await newUrl.save()
             return res.status(200).json({success: true, message: "url added", newUrl});
         }

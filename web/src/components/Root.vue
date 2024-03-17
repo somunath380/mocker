@@ -1,25 +1,23 @@
 <template lang="">
     <div>
-        <div class="snackbar">
-            <v-snackbar v-model="showNotification" :timeout="2000" color="success" location="top">
-                <span>{{this.msg}}</span>
-                <template v-slot:actions>
-                    <v-btn
-                    color="white"
-                    variant="text"
-                    @click="showNotification = false"
-                    >
+        <v-snackbar v-model="error" :color="color" :timeout="timeout" location="top">
+            {{ msg }}
+            <template v-slot:action="{ close }">
+                <v-btn flat color="white" text @click="close">
                     Close
-                    </v-btn>
-                </template>
-            </v-snackbar>
-        </div>
+                </v-btn>
+            </template>
+        </v-snackbar>
         <div class="root">
             <h1>Hello And Welcome to Mocker</h1>
         </div>
-        <div class="login-or-register" v-if="showLoginSignup">
-            <button type="button" class="btn btn-primary" @click="goToLogin">Login</button>
-            <button type="button" class="btn btn-success" @click="goToSignup">Signup</button>
+        <div class="login-or-register">
+            <div class="login">
+                <login ref="loginref" :generateRefreshToken="loginWithoutAccessToken"></login>
+            </div>
+            <div class="signup">
+                <signup></signup>
+            </div>
         </div>
     </div>
 </template>
@@ -27,120 +25,128 @@
 
 <script>
 
-import { validateRefreshTokenAPI, getUserDetailsAPI, getAccessTokenAPI } from '../API';
+import { getUserDetailsAPI } from '../API';
+import { getAccessToken, validateRefreshToken } from '../common/token'
+import Login from './Login.vue';
+import Signup from './Signup.vue';
 export default {
+    components: {
+        'login': Login,
+        'signup': Signup
+    },
     data() {
         return {
-            msg: '',
-            loginPage: '/login',
-            signUpPage: '/signup',
-            showNotification: false,
-            showLoginSignup: false,
             accessToken: null,
-            user: null
+            user: null,
+            error: false,
+            msg: '',
+            color: 'error',
+            timeout: 2000,
+            loginWithoutAccessToken: false
         }
     },
     created() {
-        this.validateRefreshToken();
+        this.checkRefreshToken();
     },
     methods: {
-        async validateRefreshToken() {
-            const response = await validateRefreshTokenAPI()
-            if (response?.error){
-                // show error dialog box
-                this.showNotification = true
-                if (response.status === 400 || response.status === 302){
-                    //"no cookie set" or "session expired, please re login"
-                    this.msg = "Please login again"
+        async checkRefreshToken() {
+            try {
+                let token = await validateRefreshToken()
+                if (token === 'signup') {
+                    // if refreshtoken is not found show login
+                    this.loginWithoutAccessToken = true
+                    // this.error = true
+                    // this.msg = 'you need to signup'
+                    // this.color = 'success'
                 }
-                else if (response.status === 401){
-                    this.msg = 'wrong user'
+                else {
+                    await this.fetchAccessToken()
                 }
-                // show login and signup button
-                this.showLoginSignup = true
-            } else {
-                // get access token
-                this.accessToken = await this.getAccessToken()
-                // get user details
-                await this.getSetUserDetails()
-                this.showNotification = true
-                this.msg = `welcome ${this.user.username}`
-                setTimeout(() => {
-                    this.goToProfilePage(this.user.id)
-                }, 1500);
+            } catch (error) {
+                // if refreshtoken is invalid/expired show login
+                this.loginWithoutAccessToken = true
+                this.error = true
+                this.msg = error.message || 'Please login'
+                this.color = 'error'
             }
         },
-        async getAccessToken() {
-            const response = await getAccessTokenAPI()
-            if (response?.error){
-                this.showNotification = true
-                if (response.status === 302){
-                    this.msg = "please login again"
+        async fetchAccessToken() {
+            try {
+                let token = await getAccessToken()
+                this.error = true
+                this.color = 'error'
+                if (token == "relogin") {
+                    this.msg = 'please re-login to your account'
                 }
-                else if (response.status === 401){
-                    this.msg = "wrong user"
+                if (token == "Unauthorized user") {
+                    this.msg = 'Sorry you are not authorized'
                 }
-                else if (response.status === 500){
-                    this.msg = response.errMsg
+                if (token == "error") {
+                    this.msg = 'token expired'
                 }
-                // show login and signup button
-                this.showLoginSignup = true
-            } else {
-                // set in localstorage
-                localStorage.setItem('accessToken', response.accesstoken)
-                // set in store
-                this.$store.commit('setAccessToken', response.accesstoken);
-                return response.accesstoken
+                this.error = false
+                this.color = 'success'
+                this.accessToken = token
+                await this.getSetUserDetails()
+            } catch (err) {
+                this.error = true
+                this.color = 'error'
+                this.msg = 'token expired'
+                console.error('some error occured on fetchAccessToken: ', err);
             }
         },
         async getSetUserDetails() {
-            const response = await getUserDetailsAPI(this.accessToken)
-            if (response?.error){
-                this.showNotification = true
-                if (response.status === 401){
-                    this.accessToken = await this.getAccessToken()
-                    // refresh the page
-                    this.msg = "reloading page"
-                    location.reload()
+            try {
+                const response = await getUserDetailsAPI(this.accessToken)
+                if (response?.error) {
+                    this.error = true
+                    this.color = 'error'
+                    if (response.status === 405) {
+                        this.msg = "no user found"
+                    } else {
+                        this.msg = "some error occured while getting user details"
+                        console.error(`Some error occured in getSetUserDetails:`, JSON.parse(response))
+                    }
+                } else {
+                    let user = {
+                        id: response.user.id,
+                        username: response.user.username,
+                        login: response.user.login
+                    }
+                    this.user = user
+                    if (!user.login) {
+                        this.error = true
+                        this.color = 'error'
+                        this.msg = 'you need to login'
+                    } else {
+                        localStorage.setItem('user', JSON.stringify(user))
+                        this.error = true
+                        this.color = 'success'
+                        this.msg = 'login successful'
+                        this.goToProfilePage(user.id)
+                    }
                 }
-                else if (response.status === 400){
-                    this.accessToken = await this.getAccessToken()
-                    // refresh the page
-                    this.msg = "no user found"
-                }
-                else if (response.status === 500){
-                    this.accessToken = await this.getAccessToken()
-                    // refresh the page
-                    this.msg = response.errMsg
-                }
-            } else {
-                let user = {
-                    id: response.user.id,
-                    username: response.user.username,
-                    login: response.user.login
-                }
-                this.user = user
-                // storing in local storage
-                localStorage.setItem('user', JSON.stringify(user))
-                // storing in store
-                this.$store.commit('setUser', user);
-                return response.accesstoken
+            } catch (err) {
+                this.error = true
+                this.color = 'error'
+                this.msg = 'some problem occured'
+                console.error('error on getSetUserDetails', err)
             }
         },
-        goToLogin() {
-            this.$router.push(this.loginPage)
-        },
-        goToSignup() {
-            this.$router.push(this.signUpPage)
-        },
         goToProfilePage(id) {
-            this.$router.push({name: 'Profile', params: { userid: id }});
-        }
+            this.$router.push({ name: 'Profile', params: { userid: id } });
+        },
     }
 }
 </script>
 
+<style>
+.login-or-register {
+    display: flex; /* Arrange buttons horizontally */
+    justify-content: space-evenly; /* Space evenly */
+    height: 50px;
+    margin-top: 40px;
+    padding-top: 30px;
+}
 
-<style lang="">
-    
 </style>

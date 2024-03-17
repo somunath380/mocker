@@ -1,6 +1,6 @@
 <template>
     <div class="snackbar">
-        <v-snackbar v-model="showNotification" :timeout="5000" color="success" location="top">
+        <v-snackbar v-model="showNotification" :timeout="2000" :color=color location="top">
             <span>{{this.msg}}</span>
             <template v-slot:actions>
                 <v-btn
@@ -48,7 +48,7 @@
             <v-btn
                 color="orange"
                 ariant="text"
-                @click="showDialog = true"
+                @click="openUpdateDialog"
                 >
                 Update
             </v-btn>
@@ -200,11 +200,9 @@
 </template>
 
 <script>
-    import { getUrlAPI, getAccessTokenAPI, validateRefreshTokenAPI, validateAccessTokenAPI, getUserDetailsAPI, deleteUrlAPI, updateUrlAPI, testMockAPI } from '../API';
+    import { getUrlAPI, getUserDetailsAPI, deleteUrlAPI, updateUrlAPI, testMockAPI } from '../API';
+    import { getAccessToken, validateRefreshToken } from '../common/token'
     export default {
-        components: {
-
-        },
         data(){
             return {
                 userId: this.$route.params.userid,
@@ -212,6 +210,7 @@
                 url: null,
                 success: false,
                 msg: '',
+                color: 'error',
                 showNotification: false,
                 user: null,
                 showDialog: false,
@@ -232,9 +231,166 @@
                 showTest: false,
                 runTest: false,
                 apiResponse: null,
+                accessToken: null,
             }
         },
         methods: {
+            openUpdateDialog() {
+                this.showDialog = true
+            },
+            closeUpdateDialog() {
+                this.showDialog = false
+            },
+            async updateUrl() {
+                try {
+                    let payload = this.getPayload();
+                    let accessToken = await getAccessToken()
+                    const response = await updateUrlAPI(this.userId, this.urlId, accessToken, payload);
+                    if (response.error){
+                        this.success = false
+                        this.msg = response.errMsg
+                        this.showNotification = true
+                    } else {
+                        this.showNotification = true;
+                        this.success = true;
+                        this.msg = response.message;
+                        this.dialog = false;
+                    }
+                    this.closeUpdateDialog()
+                } catch (error) {
+                    this.showNotification = true
+                    this.color = 'error'
+                    this.msg = error.message
+                    console.error('Error occured at updateUrl: ', error)
+                }
+            },
+            sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            },
+            async deleteUrl() {
+                try {
+                    let accessToken = await getAccessToken()
+                    const response = await deleteUrlAPI(this.userId, this.urlId, accessToken);
+                    if (response?.error){
+                        this.showNotification = true
+                        this.success = false
+                        this.msg = response.errMsg
+                    } else {
+                        this.showNotification = true,
+                        this.msg = "Url deleted successfully",
+                        this.$router.push(`/profile/${this.userId}`)
+                    }
+                } catch (error) {
+                    this.showNotification = true
+                    this.color = 'error'
+                    this.msg = error.message
+                    console.error('Error occured at deleteUrl: ', error)
+                }
+            },
+            async runningTest(){
+                this.showTest = true;
+                await this.sleep(2000);
+                this.apiResponse = await testMockAPI(this.mockUrl, this.mockMethod, this.mockPayload)
+                this.runTest = true
+            },
+            async checkRefreshToken() {
+                try {
+                    let istoken = await validateRefreshToken() 
+                    if (istoken === 'signup') {
+                        // if refreshtoken is not found redirect to root
+                        this.showNotification = true
+                        this.msg = 'you need to signup'
+                        this.color = 'success'
+                        this.loginWithoutAccessToken = true
+                    } else {
+                        await this.fetchAccessToken()
+                    }
+                } catch (err) {
+                    this.error = true
+                    this.msg = err.message
+                    this.color = 'error'
+                    console.error('Error occured at checkRefreshToken: ', err)
+                }
+            },
+            async fetchAccessToken() {
+                try {
+                    let token = await getAccessToken()
+                    this.showNotification = true
+                    this.color = 'error'
+                    if (token == "relogin") {
+                        this.msg = 'please re-login to your account'
+                    }
+                    if (token == "Unauthorized user") {
+                        this.msg = 'Sorry you are not authorized'
+                    }
+                    if (token == "error") {
+                        this.msg = 'token expired'
+                    }
+                    this.showNotification = false
+                    this.color = 'success'
+                    this.accessToken = token
+                    await this.fetchUserDetails()
+                } catch (err) {
+                    this.error = true
+                    this.color = 'error'
+                    this.msg = 'token expired'
+                    console.error('some error occured on fetchAccessToken: ', err);
+                }
+            },
+            async fetchUserDetails() {
+                try {
+                    const storedUser = localStorage.getItem('user');
+                    if (storedUser) {
+                        this.user = JSON.parse(storedUser)
+                    } else {
+                        await this.getSetUserDetails()
+                    }
+                    //here
+                    await this.fetchUrl()
+                } catch (err) {
+                    this.error = true
+                    this.color = 'error'
+                    this.msg = 'unable to get user details'
+                    console.error('some error occured on fetchUserDetails: ', err);
+                }
+            },
+            async getSetUserDetails() {
+                try {
+                    const response = await getUserDetailsAPI(this.accessToken)
+                    if (response?.error){
+                        this.error = true
+                        this.msg = response.errMsg
+                        this.color = 'error'
+                    } else {
+                        let user = {
+                            id: response.user.id,
+                            username: response.user.username,
+                            login: response.user.login
+                        }
+                        this.user = user
+                        // storing in local storage
+                        localStorage.setItem('user', JSON.stringify(user))
+                    }
+                } catch (err) {
+                    this.error = true
+                    this.color = 'error'
+                    this.msg = 'get user details api failed'
+                    console.error('some error occured on getSetUserDetails: ', err);
+                }
+            },
+            async fetchUrl() {
+                try {
+                    let accessToken = await getAccessToken()
+                    const response = await getUrlAPI(this.userId, this.urlId, accessToken)
+                    this.url = response.url;
+                    await this.displayContents()
+                } catch (error) {
+                    this.showNotification = true
+                    this.color = 'error'
+                    this.msg = error.message
+                    console.error('Error occured at fetchUrl: ', error)
+                }
+            },
             async displayContents(){
                 this.mockUrl = this.url.url;
                 this.mockStatus = this.url.status_code;
@@ -246,27 +402,6 @@
                 this.mockFile = this.url?.filepath? this.url.filepath : null;
                 this.mockExecuteFile = this.url?.execute_file ? this.url.execute_file : false;
                 this.mockCreatedDate = this.url.createdDate
-            },
-            async updateUrl() {
-                let payload = this.getPayload();
-                console.log(payload);
-                const accessToken = await this.getAccessToken()
-                const response = await updateUrlAPI(this.userId, this.urlId, accessToken, payload);
-                if (response.error){
-                    this.success = false
-                    this.msg = response.errMsg
-                    this.showNotification = true
-                } else {
-                    this.showNotification = true;
-                    this.success = true;
-                    this.msg = response.message;
-                    this.dialog = false;
-                    await this.sleep(2000);
-                    this.$router.go();
-                }
-            },
-            sleep(ms) {
-                return new Promise(resolve => setTimeout(resolve, ms));
             },
             getPayload() {
                 console.log();
@@ -281,140 +416,10 @@
                 }
                 return data
             },
-            async getRefreshToken() {
-                // this checks for the validity of the refresh token
-                // if it is valid then it will store the token in the browser cookies and gets the accessToken
-                // else it will redirect to the login page
-                const response = await validateRefreshTokenAPI()
-                if (response?.error){
-                    // show error dialog box
-                    this.showNotification = true
-                    if (response.status === 400 || response.status === 302){
-                        //"no cookie set" or "session expired, please re login"
-                        this.msg = "Please login again"
-                    }
-                    else if (response.status === 401){
-                        thishis.msg = 'wrong user'
-                    }
-                    // show login and signup button
-                    this.showLoginSignup = true
-                    this.$router.push("/login")
-                } else {
-                    this.getAccessToken();
-                }
-            },
-            async getAccessToken() {
-                // checks accessToken in the browser local storage
-                // if it is found then it makes an API call to check if it is valid or not
-                // if response is true then it sets accessToken in the local storage and in the store
-                // otherwise it makes an api call with the refresh token to get new access token and set it in the local storage and store
-                
-                // checks if the 'accessToken' is present in the local storage
-                const accessToken = localStorage.getItem('accessToken');
-                // if not present
-                if (!accessToken){
-                    // call the API to get new access token and save in the local storage
-                    let newAccessToken = this.getNewAccessToken()
-                    return newAccessToken
-                } else {
-                    // if accessToken is present in the browser local storage
-                    // check if the token is valid or not
-                    const response = await validateAccessTokenAPI(accessToken);
-                    if (response?.error){
-                        // if the access token is invalid then get new access token and save in browser
-                        this.showNotification = true
-                        this.msg = response.errMsg
-                        let newAccessToken = this.getNewAccessToken()
-                        return newAccessToken
-                    } else {
-                        return accessToken
-                    }
-                }
-            },
-            async getNewAccessToken() {
-                // gets new access token and saves it in the browser local storage
-                const response = await getAccessTokenAPI()
-                    if (response?.error){
-                        this.showNotification = true
-                        this.success = false
-                        this.msg = response.errMsg
-                        if (response?.status === 302){
-                            // need to redirect to the login page
-                            // this.$router.push("/login")
-                            this.showNotification = true
-                            this.msg = "something wrong occured while getting token"
-                        }
-                    } else {
-                        // set in localstorage
-                        localStorage.setItem('accessToken', response.accesstoken) // do not save the token as JSON.stringify because the accesstoken is in str format
-                        return response.accesstoken
-                    }
-            },
-            async fetchUrl(){
-                const accessToken = await this.getAccessToken()
-                const response = await getUrlAPI(this.userId, this.urlId, accessToken)
-                if (response.error){
-                    this.getNewAccessToken()
-                } else {
-                    this.url = response.url;
-                    await this.displayContents()
-                }
-            },
-            async fetchUserDetails() {
-                const storedUser = localStorage.getItem('user');
-                if (storedUser) {
-                    this.user = JSON.parse(storedUser)
-                } else {
-                    await this.getSetUserDetails()
-                }
-            },
-            async getSetUserDetails() {
-                let token = await this.getAccessToken()
-                const response = await getUserDetailsAPI(token)
-                if (response?.error){
-                    this.showNotification = true
-                    this.success = false
-                    this.msg = response.errMsg
-                } else {
-                    let user = {
-                        id: response.user.id,
-                        username: response.user.username,
-                        login: response.user.login
-                    }
-                    this.user = user
-                    // storing in local storage
-                    localStorage.setItem('user', JSON.stringify(user))
-                    // storing in store
-                    this.$store.commit('setUser', user);
-                }
-            },
-            async deleteUrl() {
-                let token = await this.getAccessToken();
-                const response = await deleteUrlAPI(this.userId, this.urlId, token);
-                if (response?.error){
-                    this.showNotification = true
-                    this.success = false
-                    this.msg = response.errMsg
-                } else {
-                    this.showNotification = true,
-                    this.msg = "Url deleted successfully",
-                    this.$router.push(`/profile/${this.userId}`)
-                }
-            },
-            async runningTest(){
-                this.showTest = true;
-                await this.sleep(2000);
-                this.apiResponse = await testMockAPI(this.mockUrl, this.mockMethod, this.mockPayload)
-                this.runTest = true
-            },
         },
         created() {
-            this.getRefreshToken();
-            this.fetchUserDetails();
+            this.checkRefreshToken();
         },
-        mounted() {
-            this.fetchUrl();
-        }
     }
 </script>
 
