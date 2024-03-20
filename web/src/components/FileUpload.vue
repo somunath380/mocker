@@ -138,6 +138,7 @@
 
 <script>
 import { uploadFileAPI, getAccessTokenAPI, validateAccessTokenAPI } from '../API';
+import { getAccessToken, validateRefreshToken } from '../common/token'
 
 export default {
     data() {
@@ -166,7 +167,7 @@ export default {
             },
             file: null,
             user: JSON.parse(localStorage.getItem('user')),
-            accessToken: localStorage.getItem('accessToken'),
+            accessToken: null,
             isError: false,
             response: null,
             errorMessage: null,
@@ -182,7 +183,7 @@ export default {
     },
     methods: {
         async addUrl() {
-            this.accessToken = await this.getAccessToken()
+            this.accessToken = await this.fetchAccessToken()
             let currentUser = {id: this.user.id, username: this.user.username};
             const formData = new FormData();
             formData.append('file', this.file[0]);
@@ -209,59 +210,39 @@ export default {
                 this.$router.go();
             }
         },
-        async getAccessToken() {
-            // checks accessToken in the browser local storage
-            // if it is found then it makes an API call to check if it is valid or not
-            // if response is true then it sets accessToken in the local storage and in the store
-            // otherwise it makes an api call with the refresh token to get new access token and set it in the local storage and store
-            
-            // checks if the 'accessToken' is present in the local storage
-            const accessToken = localStorage.getItem('accessToken');
-            // if not present
-            if (!accessToken){
-                // call the API to get new access token and save in the local storage
-                let newAccessToken = this.getNewAccessToken()
-                return newAccessToken
-            } else {
-                // if accessToken is present in the browser local storage
-                // check if the token is valid or not
-                const response = await validateAccessTokenAPI(accessToken);
-                if (response?.error){
-                    // if the access token is invalid then get new access token and save in browser
-                    this.showNotification = true
-                    this.msg = response.errMsg
-                    let newAccessToken = this.getNewAccessToken()
-                    return newAccessToken
-                } else {
-                    return accessToken
+        async fetchAccessToken() {
+            try {
+                let token = await getAccessToken()
+                this.error = true
+                this.color = 'error'
+                if (token == "relogin") {
+                    this.msg = 'please re-login to your account'
                 }
+                else if (token == "Unauthorized user") {
+                    this.msg = 'Sorry you are not authorized'
+                }
+                else if (token == "error") {
+                    this.msg = 'token expired'
+                }
+                else {
+                    this.error = false
+                    this.color = 'success'
+                    this.accessToken = token
+                    return token
+                }
+            } catch (err) {
+                this.error = true
+                this.color = 'error'
+                this.msg = 'token expired'
+                console.error('some error occured on fetchAccessToken: ', err);
             }
-        },
-        async getNewAccessToken() {
-            // gets new access token and saves it in the browser local storage
-            const response = await getAccessTokenAPI()
-                if (response?.error){
-                    this.showNotification = true
-                    this.success = false
-                    this.msg = response.errMsg
-                    if (response?.status === 302){
-                        // need to redirect to the login page
-                        // this.$router.push("/login")
-                        this.showNotification = true
-                        this.msg = "something wrong occured while getting token"
-                    }
-                } else {
-                    // set in localstorage
-                    localStorage.setItem('accessToken', response.accesstoken) // do not save the token as JSON.stringify because the accesstoken is in str format
-                    return response.accesstoken
-                }
         },
         sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
         }
     },
     created(){
-        this.getAccessToken()
+        // this.getAccessToken()
     }
 }
 </script>

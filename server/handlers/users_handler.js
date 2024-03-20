@@ -30,7 +30,7 @@ exports.createUser = async (req, res, next) => {
             }
             await newUser.save();
             // generate refresh token and save it in db
-            const refreshToken = await generateRefreshToken(newUser._id)
+            const refreshToken = await generateRefreshToken(newUser._id, newToken = true)
             const newRefreshToken = RefreshTokenModel({
                 token: refreshToken,
                 userId: newUser._id,
@@ -38,10 +38,10 @@ exports.createUser = async (req, res, next) => {
             })
             await newRefreshToken.save();
             // generate access token
-            const accessToken = await generateAccessToken({"id": newUser._id, "role": newUser.role})
+            const accessToken = await generateAccessToken({"id": newUser._id, "role": newUser.role}, newToken = true)
             // set refresh token in cookie
             res.cookie(
-                "refreshToken",
+                `${newUser._id}_refresh_token`,
                 refreshToken,
                 {
                     httpOnly: true, 

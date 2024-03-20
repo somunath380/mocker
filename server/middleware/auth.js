@@ -67,3 +67,31 @@ exports.loginAuth = (req, res, next) => {
         return res.status(401).json({success: false, message: err.message})
     }
 }
+
+
+exports.logoutAuth = (req, res, next) => {
+    // check if the access token is expired in the header or not
+    const accessToken = req.headers['authorization']
+    try {
+        // if there is accesstoken then skip generateTokens
+        if (accessToken) {
+            jwt.verify(accessToken, jwtSecret, (err, decodedToken) => {
+                if (err) {
+                    return res.status(401).json({success: false, message: err.message})
+                } else {
+                    if (decodedToken.role == "basic" || decodedToken.role == "admin") {
+                        req.body.userid = decodedToken.id
+                        return next()
+                    } else {
+                        return res.status(403).json({success: false, message: "Not Authorized"})
+                    }
+                }
+            })
+        }
+        else {
+            return res.status(401).json({success: false, message: "Access token required"})
+        }
+    } catch (err) {
+        return res.status(401).json({success: false, message: err.message})
+    }
+}

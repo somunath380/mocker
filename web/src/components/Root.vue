@@ -8,16 +8,11 @@
                 </v-btn>
             </template>
         </v-snackbar>
-        <div class="root">
-            <h1>Hello And Welcome to Mocker</h1>
-        </div>
+        <h1>Hello And Welcome to Mocker 🥳</h1>
+        <p>Where you can mock any API, upload files, execute scripts to get responses 🔥</p>
         <div class="login-or-register">
-            <div class="login">
-                <login ref="loginref" :generateRefreshToken="loginWithoutAccessToken"></login>
-            </div>
-            <div class="signup">
-                <signup></signup>
-            </div>
+            <div class="login"><login ref="loginref" :generateRefreshToken="loginWithoutAccessToken"></login></div>
+            <div class="signup"><signup></signup></div>
         </div>
     </div>
 </template>
@@ -29,10 +24,11 @@ import { getUserDetailsAPI } from '../API';
 import { getAccessToken, validateRefreshToken } from '../common/token'
 import Login from './Login.vue';
 import Signup from './Signup.vue';
+
 export default {
     components: {
         'login': Login,
-        'signup': Signup
+        'signup': Signup,
     },
     data() {
         return {
@@ -42,7 +38,7 @@ export default {
             msg: '',
             color: 'error',
             timeout: 2000,
-            loginWithoutAccessToken: false
+            loginWithoutAccessToken: false,
         }
     },
     created() {
@@ -55,9 +51,9 @@ export default {
                 if (token === 'signup') {
                     // if refreshtoken is not found show login
                     this.loginWithoutAccessToken = true
-                    // this.error = true
-                    // this.msg = 'you need to signup'
-                    // this.color = 'success'
+                    this.error = true
+                    this.msg = 'new to mocker? you need to signup'
+                    this.color = 'success'
                 }
                 else {
                     await this.fetchAccessToken()
@@ -73,21 +69,26 @@ export default {
         async fetchAccessToken() {
             try {
                 let token = await getAccessToken()
-                this.error = true
-                this.color = 'error'
                 if (token == "relogin") {
+                    this.error = true
+                    this.color = 'error'
                     this.msg = 'please re-login to your account'
                 }
                 if (token == "Unauthorized user") {
+                    this.error = true
+                    this.color = 'error'
                     this.msg = 'Sorry you are not authorized'
                 }
                 if (token == "error") {
+                    this.error = true
+                    this.color = 'error'
                     this.msg = 'token expired'
+                } else {
+                    this.error = false
+                    this.color = 'success'
+                    this.accessToken = token
+                    await this.getSetUserDetails()
                 }
-                this.error = false
-                this.color = 'success'
-                this.accessToken = token
-                await this.getSetUserDetails()
             } catch (err) {
                 this.error = true
                 this.color = 'error'
@@ -111,9 +112,11 @@ export default {
                     let user = {
                         id: response.user.id,
                         username: response.user.username,
-                        login: response.user.login
+                        login: response.user.login,
+                        accesstoken: response.accesstoken
                     }
                     this.user = user
+                    localStorage.setItem('user', JSON.stringify(user))
                     if (!user.login) {
                         this.error = true
                         this.color = 'error'

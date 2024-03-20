@@ -1,7 +1,6 @@
 
 import {getAccessTokenAPI, validateAccessTokenAPI, validateRefreshTokenAPI, checkCookieAPI} from '../API/index'
 
-
 export async function getAccessToken() {
 
     // either returns accesstoken or 'relogin' to indicate refresh token is missing
@@ -13,34 +12,38 @@ export async function getAccessToken() {
     // if refreshToken is not set in the cookie then it returns relogin to indicatate re-login
     // so the new refresh token can be set and used
     // checks if the 'accessToken' is present in the local storage
-    const accessToken = localStorage.getItem('accessToken');
+    const user = JSON.parse(localStorage.getItem('user'))
+    if (!user) {
+        return "relogin"
+    }
+    let accesstoken = user.accesstoken
     // if not present
-    if (!accessToken){
+    if (!accesstoken){
         // call the API to get new access token and save in the local storage
-        let newAccessToken = await getNewAccessToken()
+        let newAccessToken = await getNewAccessToken(user.id)
         return newAccessToken
     } else {
         // if accessToken is present in the browser local storage
         // check if the token is valid or not
-        const response = await validateAccessTokenAPI(accessToken);
+        const response = await validateAccessTokenAPI(accesstoken, user.id);
         if (response?.error){
             // if the access token is invalid then get new access token and save in browser
-            let newAccessToken = await getNewAccessToken()
+            let newAccessToken = await getNewAccessToken(user.id)
             return newAccessToken
         } else {
-            return accessToken
+            return accesstoken
         }
     }
 }
 
-export async function getNewAccessToken() {
+export async function getNewAccessToken(id) {
     // gets new access token and saves it in the browser local storage
     // check if refreshToken is present or not
-    const isCookie = await isCookieSet()
+    let isCookie = await isCookieSet()
     if (!isCookie) {
         return 'relogin' // returning string because access token is also string
     }
-    const response = await getAccessTokenAPI()
+    const response = await getAccessTokenAPI(id)
     if (response?.error){
         if (response.status == 302) {
             return 'relogin'
@@ -53,27 +56,38 @@ export async function getNewAccessToken() {
         }
     } else {
         // set in localstorage
-        localStorage.setItem('accessToken', response.accesstoken) // do not save the token as JSON.stringify because the accesstoken is in str format
+        let user = JSON.parse(localStorage.getItem('user'))
+        user.accesstoken = response.accesstoken
+        localStorage.setItem('user', JSON.stringify(user))
         return response.accesstoken
     }
 }
 
 async function isCookieSet() {
-    return await checkCookieAPI()
+    let user = JSON.parse(localStorage.getItem('user'))
+    if (!user) {
+        return false
+    } else {
+        return checkCookieAPI(user.id)
+    }
 }
 
-
 export async function validateRefreshToken() {
-    // returns true/false/relogin only
-    const cookie = await isCookieSet()
-    if (!cookie) {
-        return 'signup'
-    }
-    const response = await validateRefreshTokenAPI()
-    if (response?.error){
-        throw new Error(response.errMsg)
-    } else {
-        return true
+    try {
+        // first check if cookie is set or not
+        let isCookie = await isCookieSet()
+        if (!isCookie) {
+            return "signup"
+        }
+        let user = JSON.parse(localStorage.getItem('user'))
+        const response = await validateRefreshTokenAPI(user.id)
+        if (response?.error){
+            throw new Error(response.errMsg)
+        } else {
+            return true
+        }
+    } catch (error) {
+        throw new Error('Some error occured')
     }
 }
 

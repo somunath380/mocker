@@ -18,7 +18,7 @@
             color="blue"
             ariant="text"
             @click="Logout">
-            Logout
+            Logout 😟
         </v-btn>
     </div>
 </template>
@@ -50,7 +50,10 @@ export default {
                 this.msg = 'logout successful'
                 this.showNotification = true
                 this.color = 'success'
-                // this.$router.push('/');
+                let user = JSON.parse(localStorage.getItem('user'))
+                user.login = false
+                localStorage.setItem('user', JSON.stringify(user))
+                this.$router.push('/');
                 setTimeout(() => {
                     this.$router.push('/');
                 }, 1000);

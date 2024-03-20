@@ -6,7 +6,7 @@ const path = '/api/v1'
 
 const baseUrl = domain + `:${port}` + path
 
-export const validateRefreshTokenAPI = async () => {
+export const validateRefreshTokenAPI = async (id) => {
     // checks refresh token validity
 
     // 200 response 
@@ -31,7 +31,7 @@ export const validateRefreshTokenAPI = async () => {
     //     error: error.message
     try {
         const endpoint = baseUrl + '/auth/validate/refresh/token'
-        const response = await axios.get(endpoint, {withCredentials: true})
+        const response = await axios.post(endpoint, {id}, {withCredentials: true})
         return response.data
     } catch (error) {
         const status = error.response.status
@@ -52,7 +52,7 @@ export const logInUserAPI = async (username, password, accesstoken=null) => {
     // 400 { success: false, error: error.message}
     const endpoint = baseUrl + '/auth/login'
     const options = {
-        withCredentials: true,
+        // withCredentials: true,
         headers: {'Content-Type': 'application/json'}
     }
     if (accesstoken){
@@ -107,7 +107,7 @@ export const getUserDetailsAPI = async (accesstoken) => {
     }
 }
 
-export const getAccessTokenAPI = async () => {
+export const getAccessTokenAPI = async (id) => {
     // gets access token from the refresh token
     // 200 {success: true, accesstoken}
     // 302 response 
@@ -123,7 +123,7 @@ export const getAccessTokenAPI = async () => {
     // error: "wrong user is trying to access resource"
     const endpoint = baseUrl + '/auth/access/token'
     try {
-        const response = await axios.get(endpoint, {
+        const response = await axios.post(endpoint, {id}, {
             withCredentials: true})
         return response.data
     } catch (error) {
@@ -154,14 +154,14 @@ export const getAllUrlsAPI = async (userid, accesstoken) => {
     }
 }
 
-export const validateAccessTokenAPI = async (accesstoken) => {
+export const validateAccessTokenAPI = async (accesstoken, id) => {
     try {
         const endpoint = baseUrl + '/auth/validate/access/token'
         const options = {
             withCredentials: true,
             headers: {'Content-Type': 'application/json', 'Authorization': accesstoken}
         }
-        const response = await axios.get(endpoint, options)
+        const response = await axios.post(endpoint, {id}, options)
         return response.data
     } catch (error) {
         const status = error.response.status
@@ -306,9 +306,9 @@ export const logoutAPI = async (accesstoken, userid) => {
     }
 }
 
-export const checkCookieAPI = async () => {
+export const checkCookieAPI = async (id) => {
     const endpoint = baseUrl + '/auth/check/refreshtoken'
     const options = {withCredentials: true}
-    const response = await axios.get(endpoint, options)
+    const response = await axios.post(endpoint, {id}, options)
     return response.data?.success || false
 }

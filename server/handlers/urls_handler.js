@@ -66,7 +66,7 @@ exports.createUrl = async (req, res, next) => {
             }
         } else {
             await newUrl.save()
-            return res.status(200).json({success: true, message: "url added", isModified: false});
+            return res.status(200).json({success: true, message: "url added", isModified: false, url: newUrl});
         }
         // else process the request
     } catch (error) {

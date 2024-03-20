@@ -7,7 +7,7 @@
             </v-btn>
         </template>
     </v-snackbar>
-    <v-btn color="secondary" @click="openDialog">
+    <v-btn color="green" @click="openDialog">
         Signup 😍
     </v-btn>
     <v-row justify="center">
@@ -37,6 +37,7 @@
 <script>
 import {sleep} from '../common/token'
 import { registerUserAPI } from '../API';
+import { useUserStore } from '../common/user';
     export default {
         data() {
             return {
@@ -60,7 +61,6 @@ import { registerUserAPI } from '../API';
             },
             async signUpUser() {
                 try {
-                    
                     const response = await registerUserAPI(this.username, this.email, this.password)
                     if (response?.error) {
                     // show error dialog box
@@ -77,18 +77,19 @@ import { registerUserAPI } from '../API';
                         this.error = true
                         this.color = 'success'
                         this.msg = 'user registered successfully'
-                        localStorage.setItem('accessToken', response.user.accesstoken)
                         let user = {
-                            'id': response.user.id,
-                            'username': response.user.username,
-                            'login': response?.login
+                            id: response.user.id,
+                            username: response.user.username,
+                            login: response?.login,
+                            accesstoken: response.user.accesstoken
                         }
                         localStorage.setItem('user', JSON.stringify(user))
+                        // useUserStore.commit('setUser', user)
                         if (!response?.login) {
-                            this.closeDialog()
                             this.msg = 'please login again'
                         }
                     }
+                    this.closeDialog()
                 } catch (err) {
                     this.error = true
                     this.color = 'error'

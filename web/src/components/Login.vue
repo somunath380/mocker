@@ -7,7 +7,7 @@
             </v-btn>
         </template>
     </v-snackbar>
-    <v-btn color="secondary" @click="openDialog">
+    <v-btn color="blue" @click="openDialog">
         Login 🤘
     </v-btn>
     <v-row justify="center">
@@ -37,10 +37,8 @@
 
 import { logInUserAPI} from '../API';
 import { getAccessToken } from '../common/token'
-import Signup from './Signup.vue';
     export default {
         components: {
-            'signup': Signup
         },
         props: {
             generateRefreshToken: {
@@ -82,7 +80,7 @@ import Signup from './Signup.vue';
                         // show error dialog box
                         this.error = true
                         this.color = 'error'
-                        if (response?.status === 405){
+                        if (response?.status === 405 || response?.status === 401){
                             this.msg = "Can not find your details..."
                         }
                         else if (response.status === 403){
@@ -99,16 +97,14 @@ import Signup from './Signup.vue';
                         this.error = true
                         this.color = 'success'
                         this.msg = 'login successful'
-                        this.closeDialog()
                         let user = {
                             id: response.user.id,
                             username: response.user.username,
-                            login: true
+                            login: true,
+                            accesstoken: response.user.accesstoken
                         }
                         // set user in local storage
                         localStorage.setItem('user', JSON.stringify(user))
-                        // set accesstoken in local storage
-                        localStorage.setItem('accessToken', response.user.accesstoken)
                         this.goToProfilePage(user.id)
                     }
                     this.closeDialog()

@@ -9,7 +9,7 @@
     </v-snackbar>
     <div v-if="success">
         <div class="welcome">
-            <h1>Welcome {{ user.username }}</h1>
+            <h1>Welcome {{ user.username }} 🤩</h1>
             <logout></logout>
         </div>
         <div class="buttons">
@@ -69,13 +69,11 @@ import FileUpload from './FileUpload.vue';
 import RegisterMock from './RegisterMock.vue';
 import Logout from './Logout.vue';
 import { getAccessToken, validateRefreshToken } from '../common/token'
-import Root from './Root.vue';
 export default {
     components: {
         'file-upload': FileUpload,
         'url-upload': RegisterMock,
         'logout': Logout,
-        'root': Root,
     },
     data() {
         return {
@@ -85,7 +83,7 @@ export default {
             mockResponse: null,
             mockHeaders: "application/json",
             mockStatus: 200,
-            accessToken: localStorage.getItem('accessToken'),
+            accessToken: null,
             user: null,
             error: false,
             msg: '',
@@ -107,8 +105,8 @@ export default {
             },
             supportedHeadersItems: ['application/json'],
             supportedStatusCodes: [ 200, 201, 400, 401, 403, 404, 500, 501],
-            success: false,
-            loginWithoutAccessToken: false
+            all_urls: null,
+            success: false
         }
     },
     created() {
@@ -123,7 +121,7 @@ export default {
                     this.error = true
                     this.msg = 'you need to signup'
                     this.color = 'success'
-                    this.loginWithoutAccessToken = true
+                    this.goToRoot()
                 } else {
                     await this.fetchAccessToken()
                 }
@@ -132,6 +130,7 @@ export default {
                 this.msg = err.message
                 this.color = 'error'
                 console.error('Error occured at checkRefreshToken: ', err)
+                this.goToRoot()
             }
         },
         async fetchAccessToken() {
@@ -141,12 +140,15 @@ export default {
                 this.color = 'error'
                 if (token == "relogin") {
                     this.msg = 'please re-login to your account'
+                    this.goToRoot()
                 }
                 if (token == "Unauthorized user") {
                     this.msg = 'Sorry you are not authorized'
+                    this.goToRoot()
                 }
                 if (token == "error") {
                     this.msg = 'token expired'
+                    this.goToRoot()
                 }
                 this.error = false
                 this.color = 'success'
@@ -157,6 +159,7 @@ export default {
                 this.color = 'error'
                 this.msg = 'token expired'
                 console.error('some error occured on fetchAccessToken: ', err);
+                this.goToRoot()
             }
         },
         async getSetUserDetails() {
@@ -166,11 +169,13 @@ export default {
                     this.error = true
                     this.msg = response.errMsg
                     this.color = 'error'
+                    this.goToRoot()
                 } else {
                     let user = {
                         id: response.user.id,
                         username: response.user.username,
-                        login: response.user.login
+                        login: response.user.login,
+                        accesstoken: response.user.accesstoken
                     }
                     this.user = user
                     if (!user.login) {
@@ -193,13 +198,13 @@ export default {
                 this.color = 'error'
                 this.msg = 'get user details api failed'
                 console.error('some error occured on getSetUserDetails: ', err);
+                this.goToRoot()
             }
         },
         async fetchAllUrls() {
             try {
-                // PENDING: store all mocked urls in the browser local storage
                 const response = await getAllUrlsAPI(this.user.id, this.accessToken)
-                if (response?.error){
+                if (response?.error) {
                     this.error = true
                     this.color = 'error'
                     this.msg = response.errMsg
@@ -207,11 +212,10 @@ export default {
                     if (!response.url.length) {
                         this.noUrls = true
                         this.showUrls = false
-                        return
+                    } else {
+                        this.showUrls = true;
+                        this.urls = response.url;
                     }
-                    this.showUrls = true
-                    this.urls = response.url
-                    return
                 }
             } catch (err) {
                 this.error = true

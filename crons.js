@@ -1,7 +1,8 @@
 const {checkAndDeleteAccessToken} = require('./server/tokens/generate')
 
 async function runCrons() {
-    await checkAndDeleteAccessToken()
+    // await checkAndDeleteAccessToken()
+    return
 }
 
 setInterval(runCrons, 1000)

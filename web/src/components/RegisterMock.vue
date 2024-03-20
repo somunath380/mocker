@@ -137,8 +137,8 @@
 
 
 <script>
-import { registerUrlAPI, getAccessTokenAPI, validateAccessTokenAPI, getUserDetailsAPI } from '../API';
-import { getAccessToken, validateRefreshToken } from '../common/token'
+import { registerUrlAPI } from '../API';
+import { getAccessToken } from '../common/token'
 export default {
     data() {
         return {
@@ -183,27 +183,34 @@ export default {
     methods: {
         async addUrl() {
             // transform all data to correct format
-            const data = this.getPayload()
-            if (!data.success) {
-                this.showNotification = true
-                this.success = false
-                this.msg = 'Incorrect details passed!'
-            }
-            // make api call
-            this.accessToken = await this.fetchAccessToken()
-            const response = await registerUrlAPI(this.user.id, this.accessToken, data.data)
-            if (response?.error){
-                this.success = false
-                this.msg = response.errMsg
-                this.showNotification = true
-            } else {
+            try {
+                const data = this.getPayload()
+                if (!data.success) {
+                    this.showNotification = true
+                    this.success = false
+                    this.msg = 'Incorrect details passed!'
+                }
+                // make api call
+                this.accessToken = await this.fetchAccessToken()
+                const response = await registerUrlAPI(this.user.id, this.accessToken, data.data)
+                if (response?.error){
+                    this.success = false
+                    this.msg = response.errMsg
+                    this.showNotification = true
+                } else {
+                    this.showNotification = true;
+                    this.success = true;
+                    this.msg = response.message;
+                    this.dialog = false;
+                    await this.sleep(1000);
+                    this.$router.go();
+                }
+            } catch (error) {
                 this.showNotification = true;
-                this.success = true;
-                this.msg = response.message;
-                this.dialog = false;
-                await this.sleep(2000);
-                this.$router.go();
+                this.msg = error.message
+                console.error('some error occured at addUrl: ', error)
             }
+            
         },
         async fetchAccessToken() {
             try {
@@ -213,15 +220,18 @@ export default {
                 if (token == "relogin") {
                     this.msg = 'please re-login to your account'
                 }
-                if (token == "Unauthorized user") {
+                else if (token == "Unauthorized user") {
                     this.msg = 'Sorry you are not authorized'
                 }
-                if (token == "error") {
+                else if (token == "error") {
                     this.msg = 'token expired'
                 }
-                this.error = false
-                this.color = 'success'
-                return token
+                else {
+                    this.error = false
+                    this.accessToken = token
+                    this.color = 'success'
+                    return token
+                }
             } catch (err) {
                 this.error = true
                 this.color = 'error'
