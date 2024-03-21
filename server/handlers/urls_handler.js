@@ -1,6 +1,4 @@
-require('dotenv').config();
 const _ = require("lodash")
-const config = require("../../config")
 const {UrlModel} = require("../../models/url_schema")
 const path = require('path');
 const fs = require("fs")

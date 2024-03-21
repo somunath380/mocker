@@ -1,5 +1,4 @@
 const jwt = require("jsonwebtoken")
-require('dotenv').config();
 const config = require("../../config")
 const jwtSecret = config.secret
 const {getData, setData, deleteData} = require('../../redis')

@@ -3,7 +3,7 @@ node_modules/
 package-lock.json
 .vscode/
 uploads/
-mocker-ui/node_modules/
-mocker-ui/dist/
-mocker-ui/.git
-mocker-ui/package-lock.json
+web/node_modules/
+web/dist/
+web/.git
+web/package-lock.json

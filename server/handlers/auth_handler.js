@@ -1,4 +1,3 @@
-require('dotenv').config();
 const config = require("../../config")
 const {UserModel, RefreshTokenModel} = require("../../models/user_schema")
 const { isAuthorized } = require("../encryption")

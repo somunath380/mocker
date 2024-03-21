@@ -12,21 +12,15 @@
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}/index.js",
-            "env": {
-                "ENV": "development"
-            }
         },
         {
             "type": "node",
+            "name": "ui",
             "request": "launch",
-            "name": "test db",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "program": "${workspaceFolder}\\models\\index.js",
-            "env": {
-                "ENV": "development"
-            }
+            "cwd": "${workspaceFolder}/web",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev"],
+            "skipFiles": ["<node_internals>/**"]
         }
     ]
 }

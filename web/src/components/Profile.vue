@@ -59,7 +59,7 @@
                     </table>
             </div>
         </div>
-        <h2 v-if="noUrls">You Have Not Created Any Mocks Till Now</h2>
+        <h2 v-if="noUrls">You Have Not Created Any Mocks Till Now 🥺</h2>
     </div>
 </template>
 

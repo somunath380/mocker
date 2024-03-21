@@ -1,9 +1,10 @@
-const redis = require('redis');
+const {createClient} = require('redis');
 
-const client = redis.createClient({
-    host: 'localhost',
-    port: 6379,
+const client = createClient({
+    host: "redis-db",
+    port: 6379
 });
+
 
 (async () => {
     try {
@@ -14,6 +15,7 @@ const client = redis.createClient({
         process.exit(1);
     }
 })();
+
 
 async function setData(key, value, ttl) {
     try {
