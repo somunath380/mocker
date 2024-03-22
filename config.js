@@ -7,6 +7,8 @@ const config = {
   superuser: process.env.SUPERUSER,
   superpwd: process.env.SUPERPWD,
   uploadPath: process.env.UPLOADPATH,
+  redisHost: process.env.REDIS_HOST,
+  redisPort: process.env.REDIS_PORT,
   maxRefreshTokenTTL: 60 * 60 * 24 * 7,
   maxAccessTokenTTL: 60 * 15
 };

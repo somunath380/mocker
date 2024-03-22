@@ -1,25 +1,24 @@
-const {createClient} = require('redis');
+const config = require("./config")
+const Redis = require("ioredis")
 
-const client = createClient({
-    host: "redis-db",
-    port: 6379
-});
+const redisHost = config.redisHost || "localhost"
+const redisPort = config.redisPort
 
+console.log(`using redis host: ${config.redisHost} and port: ${config.redisPort}`);
 
-(async () => {
-    try {
-        await client.connect();
-        console.log('Connected to Redis server');
-    } catch (error) {
-        console.error('Error connecting to Redis:', error);
-        process.exit(1);
+let redisInstance
+
+async function getRedis(){
+    if (!redisInstance) {
+        redisInstance = new Redis({host: redisHost, port: redisPort})
+        redisInstance.on("error", (error)=>{console.log("error on redis connection: ", error);})
     }
-})();
-
+    return redisInstance
+}
 
 async function setData(key, value, ttl) {
     try {
-        await client.set(key, value, 'EX', ttl);
+        await getRedis().set(key, value, 'EX', ttl);
     } catch (error) {
         console.error('Error setting data in Redis:', error);
     }
@@ -27,7 +26,7 @@ async function setData(key, value, ttl) {
 
 async function getData(key) {
     try {
-        const value = await client.get(key);
+        const value = await getRedis().get(key);
         return value
     } catch (error) {
         console.error('Error getting data from Redis:', error);
@@ -44,5 +43,5 @@ async function deleteData(key) {
 }
 
 module.exports = {
-    setData, getData, deleteData
+    setData, getData, deleteData, getRedis
 }

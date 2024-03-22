@@ -11,3 +11,5 @@ if not valid the ui will take user to /login point
 else will show user details in the ui
 
 in the backend get the user details from the refresh token and give response
+
+sed -i -e 's/\r$//' yourScript.sh

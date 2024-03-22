@@ -1,53 +1,38 @@
 version: '3.4'
 
 services:
-
-  # mocker:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   hostname: mocker
-  #   container_name: mocker
-  #   image: mocker:latest
-  #   restart: always
-  #   depends_on:
-  #     - redis-db
-  #   ports:
-  #     - 3000:3000
-  #   volumes:
-  #     - mongo-data:/app/data
-  #     - ./:/app
-  #   networks:
-  #     - mocker_network
-
-  mocker_db:
-    image: mongo:4.2.0-bionic
-    container_name: mocker_db
+  server:
+    build:
+      context: .
+    depends_on:
+      - mongodb
+      - redis
     ports:
-      - 27017:27017
+      - 3000:3000
+    environment:
+      SERVER_PORT: 3000
+      DB_URL: mongodb://mongodb:27017/mocker
+      UPLOADPATH: ./uploads
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+  mongodb:
+    image: mongo:4.2.0-bionic
+    container_name: mongodb
+    ports:
+      - "27017:27017"
     volumes:
       - mongo-data:/data/db
-    networks:
-      - mocker_network
 
-  redis-db:
-    image: redis:5.0.5-alpine
-    platform: linux/arm64/v8
-    container_name: redis-db
-    hostname: redis-db
+  redis:
+    image: redis:7.0-alpine
+    container_name: redis
     ports:
-      - 6379:6379
+      - "6379:6379"
     volumes:
       - redis-data:/data
-    networks:
-      - mocker_network
 
 volumes:
   mongo-data:
   redis-data:
-
-networks:
-  mocker_network:
-    external: true
-    name: mocker_network
 
