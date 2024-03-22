@@ -1,10 +1,11 @@
 import axios from 'axios'
 
-const domain = 'http://127.0.0.1'
-const port = 3000
+const domain = import.meta.env.VITE_SERVER_HOST
+const port = import.meta.env.VITE_SERVER_PORT
 const path = '/api/v1'
 
-const baseUrl = domain + `:${port}` + path
+const baseUrl = 'http://' + domain + `:${port}` + path
+
 
 export const validateRefreshTokenAPI = async (id) => {
     // checks refresh token validity

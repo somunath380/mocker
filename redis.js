@@ -4,21 +4,20 @@ const Redis = require("ioredis")
 const redisHost = config.redisHost || "localhost"
 const redisPort = config.redisPort
 
+
+console.log("trying to connect redis...");
 console.log(`using redis host: ${config.redisHost} and port: ${config.redisPort}`);
-
-let redisInstance
-
-async function getRedis(){
-    if (!redisInstance) {
-        redisInstance = new Redis({host: redisHost, port: redisPort})
-        redisInstance.on("error", (error)=>{console.log("error on redis connection: ", error);})
-    }
-    return redisInstance
-}
+const redis = new Redis({host: redisHost, port: redisPort});
+redis.on('connect', () => {
+    console.log('Connected to Redis server');
+});
+redis.on('error', (err) => {
+    console.error('Redis connection error:', err);
+});
 
 async function setData(key, value, ttl) {
     try {
-        await getRedis().set(key, value, 'EX', ttl);
+        await redis.set(key, value, 'EX', ttl)
     } catch (error) {
         console.error('Error setting data in Redis:', error);
     }
@@ -26,7 +25,7 @@ async function setData(key, value, ttl) {
 
 async function getData(key) {
     try {
-        const value = await getRedis().get(key);
+        const value = await redis.get(key);
         return value
     } catch (error) {
         console.error('Error getting data from Redis:', error);
@@ -36,12 +35,12 @@ async function getData(key) {
 
 async function deleteData(key) {
     try {
-        await client.del(key);
+        await redis.del(key);
     } catch (error) {
         console.error('Error deleting key:', error);
     }
 }
 
 module.exports = {
-    setData, getData, deleteData, getRedis
+    setData, getData, deleteData, redis
 }
