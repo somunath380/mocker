@@ -87,7 +87,7 @@ export async function validateRefreshToken() {
             return true
         }
     } catch (error) {
-        throw new Error('Some error occured')
+        throw new Error(error)
     }
 }
 

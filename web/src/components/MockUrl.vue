@@ -289,7 +289,7 @@
             },
             async runningTest(){
                 this.showTest = true;
-                await this.sleep(2000);
+                await this.sleep(1000);
                 this.apiResponse = await testMockAPI(this.mockUrl, this.mockMethod, this.mockPayload)
                 this.runTest = true
             },

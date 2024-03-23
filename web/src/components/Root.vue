@@ -151,5 +151,4 @@ export default {
     margin-top: 40px;
     padding-top: 30px;
 }
-
 </style>

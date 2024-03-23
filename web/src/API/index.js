@@ -271,7 +271,7 @@ export const updateUrlAPI = async (userid, urlid, accesstoken, payload) => {
 }
 
 export const testMockAPI = async (url, httpMethod, payload) => {
-    const endpoint = domain + `:${port}` + url
+    const endpoint = 'http://' + domain + `:${port}` + url
     if (httpMethod === 'GET'){
         payload = {}
     }

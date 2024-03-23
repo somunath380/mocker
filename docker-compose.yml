@@ -11,6 +11,7 @@ services:
     ports:
       - 3000:3000
     environment:
+      SERVER: production
       SERVER_PORT: 3000
       DB_URL: mongodb://mongodb:27017/mocker
       UPLOADPATH: ./uploads
@@ -18,6 +19,8 @@ services:
       REDIS_PORT: 6379
       CLIENT_URL: http://client:8080
       SECRET: f002e557ad00ee5e328b719efe44fd9054933475585bbc1b42d5ec1278862df2
+      SUPERUSER: jesus
+      SUPERPWD: IamJesusTheSuperUser123#
 
   client:
     build: 

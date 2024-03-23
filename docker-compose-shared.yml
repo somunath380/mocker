@@ -1,0 +1,22 @@
+version: '3.4'
+
+services:
+  mongodb:
+    image: mongo:4.2.0-bionic
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data-local:/data/db
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data-local:/data
+
+volumes:
+  mongo-data-local:
+  redis-data-local:
