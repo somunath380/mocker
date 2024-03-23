@@ -63,23 +63,19 @@ Holaa!!! 🤩
 
 | Column 1 Method | Column 2 Endpoint | Description |
 | --- | --- | --- |
-| Auth API's |
+| --- | Auth API's | --- |
 | POST | /api/v1/auth/validate/refresh/token | validates the refresh token of a user |
 | POST | /api/v1/auth/validate/access/token | validates the access token of a user |
 | POST | /api/v1/auth/login | Logs in a user |
 | POST | /api/v1/auth/logout | Logs out a user |
 | POST | /api/v1/auth/access/token | generates new access token of a user from valid refresh token |
 | POST | /api/v1/auth/check/refreshtoken | Checks if refresh token is present in the Cookie or not |
-
-| User API's |
-
+| --- | User API's | --- |
 | POST | /api/v1/users/register | Register a new user |
 | PUT | /api/v1/users/updaterole | Updates the role of a user (basic/super for superuser) |
 | POST | /api/v1/users/delete | Deletes the user (for superuser) |
 | GET | /api/v1/users/getall | Get all details of all users (for superuser)|
-
-| Url API's |
-
+| --- | Url API's | --- |
 | GET | /api/v1/urls/:userid/getall | Get a list of all urls of a user |
 | GET | /api/v1/urls/:userid/get/:urlid | Get information about a specific url |
 | POST | /api/v1/urls/:userid/add | Add a new url |
