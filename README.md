@@ -1,4 +1,4 @@
-#**Project: Mocker**
+**Project: Mocker**
 ## Description
 This project provides a mock server and an UI client that allows for file streaming and dynamic responses, making it ideal for testing applications that require such functionality. With this server, developers/QA/QE's can easily simulate different scenarios and test their applications' ability to handle various types of input and output.
 
