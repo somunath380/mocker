@@ -83,6 +83,8 @@ async function executeProcess(langType, filepath) {
                 }
             });
             process.on('error', (err) => {
+                console.log("error occured at executing file: ", filepath);
+                console.error(err);
                 reject(err);
             });
         });
@@ -90,7 +92,6 @@ async function executeProcess(langType, filepath) {
         return output;
     } catch (error) {
         console.error('Error collecting data:', error);
-        return
     }
 }
 
