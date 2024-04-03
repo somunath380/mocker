@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/opt/homebrew/bin/bash
 
 if [ "$1" = "start" ]; then
     echo Building images for production...
